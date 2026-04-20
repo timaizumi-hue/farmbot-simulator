@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2e7d32">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<title>FarmBot 練習シミュレーター v23.3</title>
+<link rel="stylesheet" href="styles/app.css">
+<link rel="stylesheet" href="styles/mobile-foundation.css">
+</head>
+<body>
+<div class="homeScreen" id="homeScreen">
+  <div class="homePanel">
+    <div style="display:flex;justify-content:space-between;align-items:start;gap:24px">
+      <div>
+        <div class="muted">FarmBot 練習用</div>
+        <h1 style="margin:6px 0 10px">ホーム</h1>
+        <div class="badge">v23.3 公式操作導線整理版</div>
+        <div class="muted">公式アプリの使い方に近い順番で触れる練習用です。現在位置の確認 → Move → Peripherals → Sequence の流れを崩さず練習できます。</div>
+      </div>
+      <div class="muted" style="text-align:right">Windows / USB 直起動版 v23.3</div>
+    </div>
+    <div class="modeGrid">
+      <div class="modeCard" data-mode="tutorial"><h2>チュートリアル</h2><div>公式の触り順に沿って学びます。現在位置確認、Move、Safe Z、Home、Peripherals、水量指定、Sequence まで順番に進みます。</div><div class="modeFoot">おすすめ開始位置</div></div>
+      <div class="modeCard" data-mode="free"><h2>フリーモード</h2><div>Controls と Sequences を行き来しながら自由に練習します。状態は自動保存され、実機に近い流れで反復できます。</div><div class="modeFoot">Move / Peripherals / Sequence</div></div>
+      <div class="modeCard" data-mode="practice_quick"><h2>練習モードA</h2><div>ランダム配置に対して、Move と Water の流れを短時間で反復します。座標選択から実行までの手順確認向けです。</div><div class="modeFoot">短い反復練習</div></div>
+      <div class="modeCard" data-mode="practice_goal"><h2>練習モードB</h2><div>達成条件つきで、Move・Water・Sequence をつないで使う練習です。野菜ごとの必要水量差も含めて判断します。</div><div class="modeFoot">実践寄り</div></div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn primary" id="installAppBtnHome" type="button">アプリを追加</button><div class="muted" id="installHint" hidden></div></div><div style="margin-top:12px" class="muted">実機には接続しない練習用です。公式ドキュメントにある Controls の考え方に合わせ、現在位置確認、絶対座標移動、Home、Peripherals 操作を中心に練習します。</div><div style="margin-top:8px" class="muted">この版では、機能は変えずに、ホーム・左パネル・右パネルの導線と用語を整理して、触り方が迷いにくい状態へ寄せています。</div>
+  </div>
+</div>
+
+<div class="overlay" id="tutorialOverlay"></div>
+
+<div class="app hidden" id="appRoot">
+  <div class="topbar">
+    <div class="brand">FarmBot 練習シミュレーター v23.3</div>
+    <div class="chip" id="modeChip">モード</div>
+    <div class="chip stop" id="stateChip">停止中</div>
+    <div class="chip warn" id="speedChip">速度 60%</div>
+    <div class="chip" id="saveChip">未保存</div>
+    <div class="sp"></div>
+    <button class="btn small" id="installAppBtnTop" hidden>アプリを追加</button>
+    <button class="btn small" id="backHomeBtn">ホームへ戻る</button>
+    <button class="btn small" id="densityBtn">表示密度: 標準</button>
+    <button class="btn small" id="exportBtn">状態を出力</button>
+    <button class="btn small" id="importBtn">状態を読込</button>
+    <input type="file" id="importFile" accept="application/json" class="hidden">
+  </div>
+  <div class="layout">
+    <div class="left">
+      <div class="leftTopTabs">
+        <button class="tab active" data-panel="control">操作</button>
+        <button class="tab" data-panel="water">周辺機器</button>
+        <button class="tab" data-panel="plants">植物</button>
+        <button class="tab" data-panel="sequence">シークエンス</button>
+        <button class="tab" data-panel="logs">ログ</button>
+      </div>
+      <div class="leftMobileTabs" id="leftMobileTabs" hidden>
+        <button class="btn small active" type="button" data-mobile-left="control">操作</button>
+        <button class="btn small" type="button" data-mobile-left="water">周辺機器</button>
+        <button class="btn small" type="button" data-mobile-left="plants">植物</button>
+        <button class="btn small" type="button" data-mobile-left="sequence">Seq</button>
+        <button class="btn small" type="button" data-mobile-left="logs">ログ</button>
+      </div>
+      <div class="leftBody">
+        <div class="section" id="missionSection">
+          <h3>現在の目標 / 操作ガイド</h3>
+          <div class="mission" id="missionBox">目標なし</div><div class="flowGuide"><span>1. 畑で座標を選ぶ</span><span>2. Move で移動</span><span>3. 周辺機器で散水</span><span>4. 必要なら Sequence 化</span></div>
+        </div>
+        <div class="panel" id="panel-control">
+          <div class="section" id="selectSection">
+            <div class="sectionTitleRow">
+              <h3>現在位置 / 選択座標</h3>
+              <div class="quickJumpBtns">
+                <button class="btn small quickJump" data-target="control">移動</button>
+                <button class="btn small quickJump" data-target="water">周辺機器</button>
+                <button class="btn small quickJump" data-target="camera">カメラ</button>
+              </div>
+            </div>
+            <div class="positionSplit">
+              <div>
+                <div class="miniTitle">現在位置 (mm)</div>
+                <div class="coordBig compact">
+                  <div class="coordCell"><div class="k">X</div><div class="v" id="curX">0</div></div>
+                  <div class="coordCell"><div class="k">Y</div><div class="v" id="curY">0</div></div>
+                  <div class="coordCell"><div class="k">Z</div><div class="v" id="curZ">0</div></div>
+                </div>
+              </div>
+              <div>
+                <div class="miniTitle">選択座標 (mm)</div>
+                <div class="coordBig compact">
+                  <div class="coordCell"><div class="k">X</div><div class="v" id="selX">0</div></div>
+                  <div class="coordCell"><div class="k">Y</div><div class="v" id="selY">0</div></div>
+                  <div class="coordCell"><div class="k">Z</div><div class="v" id="selZ">0</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="note" style="margin-top:8px">公式アプリと同じ考え方で、まず現在位置を見てから、畑で選んだ座標を Move と Sequence に流し込みます。</div>
+          </div>
+
+          <div class="section" id="operateSection">
+            <h3>Move</h3><div class="sectionLead">現在位置を確認し、必要なら絶対座標へ移動します。Home / Safe Z / 停止もここで扱います。</div>
+            <div class="grid3">
+              <label>X<input type="number" id="inputX"></label>
+              <label>Y<input type="number" id="inputY"></label>
+              <label>Z (0〜-300)<input type="number" id="inputZ" min="-300" max="0" step="1"></label>
+            </div>
+            <div class="grid2" style="margin-top:8px">
+              <label>移動速度 %<input type="range" min="10" max="100" value="60" id="speedRange"></label>
+              <div style="display:flex;align-items:end"><div id="speedLabel" style="width:100%;padding:9px 8px;border:1px solid var(--line);border-radius:8px;background:#f5f2ea">60%</div></div>
+            </div>
+            <div class="grid2" style="margin-top:8px">
+              <button class="btn primary" id="goBtn">GO（選択座標へ移動）</button>
+              <button class="btn" id="safeZBtn">Safe Zへ</button>
+              <button class="btn" id="homeBtn">Home (0,0,0)</button>
+              <button class="btn danger" id="stopBtn">停止</button>
+            </div>
+            <div class="section" style="margin-top:10px;background:#faf7f1">
+              <h3>Jog controls</h3>
+              <div class="note" style="margin-bottom:8px">公式の Controls に近い考え方で、移動量を選んでから X/Y/Z を個別に動かします。</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px" id="jogStepWrap">
+                <button class="btn small jogStepBtn" data-step="1">1mm</button>
+                <button class="btn small jogStepBtn" data-step="10">10mm</button>
+                <button class="btn small jogStepBtn" data-step="100">100mm</button>
+                <button class="btn small jogStepBtn" data-step="1000">1000mm</button>
+                <button class="btn small jogStepBtn" data-step="10000">10000mm</button>
+              </div>
+              <div class="axisPad">
+                <div class="axisBox">
+                  <div style="font-weight:700;margin-bottom:6px">XY</div>
+                  <div class="grid2" style="margin-bottom:8px">
+                    <label>X/Y共通 mm<input type="number" id="jogCustomInput" min="1" max="10000" value="100"></label>
+                    <div style="display:flex;align-items:end"><button class="btn" id="applyJogCustomBtn" style="width:100%">数値を使う</button></div>
+                  </div>
+                  <div class="xyPad">
+                    <div></div><button class="btn" id="jogYMinusBtn">Y-</button><div></div>
+                    <button class="btn" id="jogXMinusBtn">X-</button><button class="btn" id="jogXYCenterBtn">XY</button><button class="btn" id="jogXPlusBtn">X+</button>
+                    <div></div><button class="btn" id="jogYPlusBtn">Y+</button><div></div>
+                  </div>
+                </div>
+                <div class="axisBox">
+                  <div style="font-weight:700;margin-bottom:6px;text-align:center">Z</div>
+                  <div class="zPad">
+                    <button class="btn" id="jogZPlusBtn">Z+</button>
+                    <button class="btn" id="jogZMinusBtn">Z-</button>
+                  </div>
+                  <div class="sensorSmall" style="margin-top:8px;text-align:center">Zは上下のみ</div>
+                </div>
+              </div>
+              <div class="note" style="margin-top:8px" id="jogStepLabel">現在のステップ: 100mm</div>
+            </div>
+            <div class="grid2" style="margin-top:8px">
+              <button class="btn" id="togglePathBtn">軌跡表示: ON</button>
+              <button class="btn" id="clearPathBtn2">移動線を消去</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel hidden" id="panel-water">
+          <div class="section">
+            <h3>Peripherals / Water</h3><div class="sectionLead">周辺機器として散水を扱います。量と半径を決めてから ON / OFF を操作します。</div>
+            <div class="grid2">
+              <label>散水半径<input type="range" min="8" max="70" value="20" id="waterRadius"></label>
+              <label>散水量<input type="range" min="1" max="10" value="4" id="waterRate"></label>
+            </div>
+            <div class="grid2" style="margin-top:8px">
+              <div id="waterRadiusLabel" style="padding:8px;border:1px solid var(--line);border-radius:8px;background:#f5f2ea">半径 20</div>
+              <div id="waterRateLabel" style="padding:8px;border:1px solid var(--line);border-radius:8px;background:#f5f2ea">量 4</div>
+            </div>
+            <div class="section" style="margin-top:8px;background:#faf7f1">
+              <h3>散水操作</h3>
+              <div class="grid2">
+                <button class="btn" id="waterStartBtn">WATER ON</button>
+                <button class="btn" id="waterStopBtn">WATER OFF</button>
+              </div>
+              <div class="grid2" style="margin-top:8px">
+                <div class="kv" id="waterPulseLabel">散水開始から 0.0秒</div>
+                <div class="kv" id="waterSprayModeLabel">WATER ONで現在位置から継続散水</div>
+              </div>
+              <div class="note" style="margin-top:8px">WATER ON は現在位置で継続散水します。OFF を押すまで止まりません。時間表示は散水開始からの経過時間です。</div>
+            </div>
+            <div class="section" style="margin-top:8px;background:#faf7f1">
+              <h3>環境</h3>
+              <div class="grid2">
+                <label>住所（地域）
+                  <select id="envRegion">
+                    <option value="sapporo">北海道 札幌</option>
+                    <option value="tokyo">東京</option>
+                    <option value="nagoya">名古屋</option>
+                    <option value="osaka">大阪</option>
+                    <option value="fukuoka">福岡</option>
+                    <option value="naha">沖縄 那覇</option>
+                  </select>
+                </label>
+                <label>季節
+                  <select id="envSeason">
+                    <option value="spring">春</option>
+                    <option value="summer">夏</option>
+                    <option value="autumn">秋</option>
+                    <option value="winter">冬</option>
+                  </select>
+                </label>
+              </div>
+              <div class="grid2" style="margin-top:8px">
+                <label>時間帯
+                  <select id="envTime">
+                    <option value="dawn">早朝</option>
+                    <option value="morning">午前</option>
+                    <option value="noon">昼</option>
+                    <option value="evening">夕方</option>
+                    <option value="night">夜</option>
+                  </select>
+                </label>
+                <label>前日の様子
+                  <select id="envPrevDay">
+                    <option value="dry">乾燥</option>
+                    <option value="normal">普通</option>
+                    <option value="rainy">雨・湿り気あり</option>
+                  </select>
+                </label>
+              </div>
+              <div class="grid2" style="margin-top:8px">
+                <div class="kv" id="envTempLabel">平均気温の目安 --℃</div>
+                <div class="kv" id="envMoistureLabel">初期土壌水分 --</div>
+              </div>
+              <div class="note" style="margin-top:8px">地域の気温傾向と季節・時間帯・前日の様子をもとに、土の乾きやすさを練習用に自動反映します。</div>
+            </div>
+            <div class="section hidden" style="margin-top:8px">
+              <h3>土壌水分センサー</h3>
+              <div class="sensorLayout">
+                <div class="meterPanel"><canvas id="moistureCanvas"></canvas></div>
+                <div class="meterInfo">
+                  <div style="font-weight:700;margin-bottom:6px" id="moistureValue">選択座標の水分 --</div>
+                  <div id="moistureStatus">赤=不足 / 青=適正 / 黒=過多</div>
+                  <div style="margin-top:8px">位置: <span id="moisturePos">X0 Y0</span></div>
+                  <div style="margin-top:6px">環境補正: <span id="moistureEnvEffect">--</span></div>
+                  <div style="margin-top:8px" class="legend">
+                    <span><span class="dot" style="background:#be4b49"></span>不足</span>
+                    <span><span class="dot" style="background:#4f95e8"></span>適正</span>
+                    <span><span class="dot" style="background:#222"></span>過多</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="grid2" style="margin-top:8px">
+              <button class="btn" id="clearWaterBtn">水跡だけ消去</button>
+              <button class="btn" id="clearPathBtn">軌跡だけ消去</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel hidden" id="panel-plants">
+          <div class="section">
+            <h3>Plants</h3><div class="sectionLead">植物配置は練習用の畑準備です。Controls の流れは変えずに、畑条件だけを調整します。</div>
+            <div class="grid2">
+              <label>種類
+                <select id="plantType">
+                  <option value="tomato">トマト</option>
+                  <option value="lettuce">レタス</option>
+                  <option value="carrot">にんじん</option>
+                  <option value="radish">ラディッシュ</option>
+                  <option value="cucumber">きゅうり</option>
+                  <option value="basil">バジル</option>
+                  <option value="spinach">ほうれん草</option>
+                </select>
+              </label>
+              <label>モード
+                <select id="plantMode">
+                  <option value="off">OFF</option>
+                  <option value="place">配置</option>
+                  <option value="delete">削除</option>
+                </select>
+              </label>
+            </div>
+            <div class="grid2" style="margin-top:8px">
+              <label>成長段階
+                <select id="plantStage">
+                  <option value="seedling">苗</option>
+                  <option value="growing">成長中</option>
+                  <option value="fruiting">実なり</option>
+                </select>
+              </label>
+              <div style="padding:8px;border:1px solid var(--line);border-radius:8px;background:#f5f2ea" id="plantWaterHint">必要水量の目安を表示</div>
+            </div>
+            <div class="note" style="margin-top:8px">畑クリックで配置/削除します。他タブへ移動すると自動でOFFに戻ります。</div>
+            <div class="grid2" style="margin-top:8px">
+              <button class="btn" id="clearPlantsBtn">植物を全消去</button>
+              <button class="btn" id="seedPracticeBtn">練習配置を入れる</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel hidden" id="panel-sequence">
+          <div class="section" id="sequenceSection">
+            <h3>Sequences</h3><div class="sectionLead">Move や Water を順番に並べて、自動実行の流れを作ります。</div>
+            <div class="grid2">
+              <label>コマンド
+                <select id="seqType">
+                  <option value="move">Move To</option>
+                  <option value="safez">Safe Zへ</option>
+                  <option value="set_water">水量/半径設定</option>
+                  <option value="water_on">水やり開始</option>
+                  <option value="water_off">水やり停止</option>
+                  <option value="wait">待機</option>
+                  <option value="reserve">開始予約</option>
+                  <option value="home">Home</option>
+                  <option value="message">メッセージ</option>
+                </select>
+              </label>
+              <label>補足値
+                <input type="text" id="seqArg" placeholder="秒数 / メッセージ など">
+              </label>
+            </div>
+            <div class="grid3" style="margin-top:8px" id="seqMoveFields">
+              <label>X<input type="number" id="seqX"></label>
+              <label>Y<input type="number" id="seqY"></label>
+              <label>Z<input type="number" id="seqZ" min="-300" max="0" step="1"></label>
+            </div>
+            <div class="grid2" style="margin-top:8px" id="seqWaterFields">
+              <label>半径<input type="number" id="seqRadius" min="8" max="70" value="20"></label>
+              <label>量<input type="number" id="seqRate" min="1" max="14" value="4"></label>
+            </div>
+            <div style="margin-top:8px" id="seqReserveField">
+              <label>予約時刻<input type="datetime-local" id="seqDateTime"></label>
+            </div>
+            <div class="grid2" style="margin-top:8px">
+              <button class="btn" id="addSeqFromSelectionBtn">選択座標を反映</button>
+              <button class="btn primary" id="addSeqBtn">追加</button>
+            </div>
+          </div>
+          <div class="section">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <h3 style="margin:0">Sequence 一覧</h3>
+              <div style="display:flex;gap:8px">
+                <button class="btn small" id="runSeqBtn">実行</button>
+                <button class="btn small danger" id="clearSeqBtn">全削除</button>
+              </div>
+            </div>
+            <div class="seqList" id="seqList"></div>
+          </div>
+        </div>
+
+        <div class="panel hidden" id="panel-logs">
+          <div class="section">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <h3 style="margin:0">ログ</h3>
+              <button class="btn small danger" id="clearLogBtn">消去</button>
+            </div>
+            <div class="log" id="logBox"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="right">
+      <div class="rightMobileTabs" id="rightMobileTabs">
+        <button class="btn small active" type="button" data-mobile-view="live">ライブ</button>
+        <button class="btn small" type="button" data-mobile-view="camera">カメラ</button>
+        <button class="btn small" type="button" data-mobile-view="map">マップ</button>
+      </div>
+      <div class="stageWrap">
+        <div class="card" id="stageCard">
+          <div class="cardHead"><span>機械動作ビュー / Live view</span>
+            <div class="viewTools">
+              <label>拡大<input type="range" id="stageZoom" min="1" max="5.0" step="0.1" value="1.1"></label>
+              <button class="btn small" id="stageCenterBtn">中央へ</button>
+              <button class="btn small" id="stageViewResetBtn">視点リセット</button>
+              <button class="btn small" id="stageViewTopBtn">少し上から</button>
+              <button class="btn small" id="stageMoistureToggleBtn">水分重ね: ON</button>
+              <button class="btn small" id="toolCamToggleBtn">手元カメラ: ON</button>
+              <span id="stagePosText" class="note">X0 Y0 Z0</span>
+              <span id="stageViewHint" class="note">ドラッグで回転</span>
+            </div>
+          </div>
+          <div class="stageBody">
+            <div class="stageViewport" id="stageViewport"><div class="stageCanvasWrap"><canvas id="stageCanvas"></canvas></div></div>
+            <div class="stageSidebar">
+              <div class="stageHud" id="stageHud">
+                <div class="stageHudHead"><span>手元カメラ</span><span id="cameraZoomLabel">1.8x</span></div>
+                <div class="miniWrap"><canvas id="toolCamCanvas"></canvas></div>
+                <div style="padding:0 10px 10px"><input type="range" id="cameraZoom" min="1" max="6" step="0.2" value="1.8"></div>
+                <div class="cameraInfoPanel" id="cameraInfoPanel">
+                  <div class="cameraInfoGrid">
+                    <div class="cameraInfoCard">
+                      <div class="k">必要水分 / 現在水分</div>
+                      <div class="v" id="cameraNeedNow">-- / --</div>
+                      <div class="cameraInfoBar"><span id="cameraNeedBar" style="width:0%"></span></div>
+                    </div>
+                    <div class="cameraInfoCard">
+                      <div class="k">散水幅 / 届き方</div>
+                      <div class="v" id="cameraHitInfo">-- / --</div>
+                      <div class="cameraInfoBar"><span id="cameraLeafBar" style="width:0%"></span></div>
+                    </div>
+                    <div class="cameraInfoCard">
+                      <div class="k">植物の状態</div>
+                      <div class="v" id="cameraRootState">-- / --</div>
+                      <div class="cameraInfoBar"><span id="cameraWetBar" style="width:0%"></span></div>
+                    </div>
+                    <div class="cameraInfoCard">
+                      <div class="k">環境差</div>
+                      <div class="v" id="cameraEnvInfo">--</div>
+                      <div class="cameraEnvNote" id="cameraEnvNote">--</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="stageSensorPanel hiddenMoistureStage" id="stageSensorPanel"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mapWrap">
+        <div class="card" id="mapCard">
+          <div class="cardHead"><span>畑マップ（mm目盛り）</span>
+            <div class="viewTools">
+              <label>拡大<input type="range" id="mapZoom" min="1" max="3.6" step="0.1" value="1.3"></label>
+              <button class="btn small" id="mapCenterBtn">中央へ</button>
+              <button class="btn small" id="mapToSeqBtn">座標→シークエンス</button>
+              <button class="btn small" id="moistureToggleBtn">水分重ね: ON</button><button class="btn small" id="tutorialBtn">チュートリアル</button>
+            </div>
+          </div>
+          <div class="canvasWrap">
+            <canvas id="mapCanvas"></canvas>
+            <div class="infoFloat hidden" id="mapInfo"></div>
+            <div class="mapCoordChip" id="mapCoordChip">選択 X0 / Y0 / Z0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="scripts/core/config.js"></script>
+<script src="scripts/core/tutorial-data.js"></script>
+<script src="scripts/core/canvas-utils.js"></script>
+<script src="scripts/views/farm-map.js"></script>
+<script src="scripts/views/right-pane.js"></script>
+<script src="scripts/views/left-pane.js"></script>
+<script src="scripts/app.js"></script>
+<script src="scripts/pwa-install.js"></script>
+</body>
+</html>

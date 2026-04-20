@@ -1,0 +1,167 @@
+/* smartphone groundwork: keep PC layout stable, add future-safe touch behavior */
+html, body {
+  overscroll-behavior: none;
+}
+button, input, select, textarea {
+  font: inherit;
+}
+canvas {
+  touch-action: manipulation;
+}
+@media (max-width: 900px) {
+  body {
+    min-height: 100dvh;
+  }
+  .topbar {
+    gap: 6px;
+    padding: 8px 10px;
+    flex-wrap: wrap;
+  }
+  .topbar .brand {
+    flex: 1 1 100%;
+    font-size: 16px;
+  }
+  .layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+    min-height: calc(100dvh - 56px);
+  }
+  .left {
+    min-width: 0;
+    border-right: none;
+    border-bottom: 1px solid rgba(169,148,113,.26);
+  }
+  .right {
+    min-width: 0;
+  }
+  .leftTopTabs {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .leftTopTabs .tab {
+    flex: 0 0 auto;
+    min-width: 88px;
+  }
+  .grid2, .grid3, .sensorLayout, .positionSplit, .cameraInfoGrid, .lessonGrid, .modeGrid, .axisPad {
+    grid-template-columns: 1fr !important;
+  }
+  .xyPad {
+    grid-template-columns: repeat(3, minmax(54px, 1fr));
+  }
+  .zPad {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto;
+  }
+  .miniWrap {
+    height: 240px !important;
+  }
+}
+
+
+.rightMobileTabs {
+  display: none;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: nowrap;
+}
+.rightMobileTabs .btn {
+  flex: 1 1 0;
+}
+.rightMobileTabs .btn.active {
+  background: #e7dfd0;
+  border-color: #b7a07a;
+}
+
+@media (max-width: 900px) {
+  .rightMobileTabs {
+    display: flex;
+  }
+  .right {
+    display: grid;
+    gap: 10px;
+  }
+  .right[data-mobile-view="live"] .mapWrap,
+  .right[data-mobile-view="live"] .stageSidebar {
+    display: none;
+  }
+  .right[data-mobile-view="camera"] .mapWrap,
+  .right[data-mobile-view="camera"] .stageViewport,
+  .right[data-mobile-view="camera"] #stageViewHint,
+  .right[data-mobile-view="camera"] #stagePosText,
+  .right[data-mobile-view="camera"] #stageMoistureToggleBtn,
+  .right[data-mobile-view="camera"] #stageViewResetBtn,
+  .right[data-mobile-view="camera"] #stageViewTopBtn,
+  .right[data-mobile-view="camera"] #stageCenterBtn,
+  .right[data-mobile-view="camera"] .viewTools label {
+    display: none;
+  }
+  .right[data-mobile-view="camera"] .mapWrap {
+    display: none;
+  }
+  .right[data-mobile-view="camera"] .stageBody {
+    display: block;
+  }
+  .right[data-mobile-view="camera"] .stageSidebar {
+    display: block;
+  }
+  .right[data-mobile-view="camera"] .stageHud {
+    display: block;
+  }
+  .right[data-mobile-view="map"] .stageWrap {
+    display: none;
+  }
+  .right[data-mobile-view="map"] .mapWrap {
+    display: block;
+  }
+  .right .stageBody {
+    min-height: 0;
+  }
+  .right[data-mobile-view="live"] .stageViewport,
+  .right[data-mobile-view="camera"] .miniWrap,
+  .right[data-mobile-view="map"] .canvasWrap {
+    min-height: 280px;
+  }
+}
+
+
+.leftMobileTabs {
+  display: none;
+  gap: 8px;
+  margin: 10px 0 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.leftMobileTabs .btn {
+  flex: 0 0 auto;
+  min-width: 84px;
+}
+.leftMobileTabs .btn.active {
+  background: #e7dfd0;
+  border-color: #b7a07a;
+}
+
+@media (max-width: 900px) {
+  .leftTopTabs {
+    display: none;
+  }
+  .leftMobileTabs {
+    display: flex;
+  }
+  .leftBody {
+    min-height: 0;
+  }
+  .panel {
+    min-height: 0;
+  }
+  .panel.hidden {
+    display: none !important;
+  }
+}
+
+
+#installHint{padding:8px 10px;border:1px dashed rgba(255,255,255,.18);border-radius:10px;background:rgba(255,255,255,.04);}
+@media (max-width: 900px){
+  #installAppBtnTop{display:none !important;}
+  #installAppBtnHome{min-height:46px;padding:10px 14px;font-size:16px;}
+}
