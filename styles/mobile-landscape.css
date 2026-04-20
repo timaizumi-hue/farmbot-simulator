@@ -1,0 +1,59 @@
+/* mobile landscape-first shell */
+.rotateHintOverlay{display:none;position:fixed;inset:0;z-index:60;background:rgba(22,19,14,.82);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:20px;}
+.rotateHintCard{max-width:320px;background:#fffdf8;border:1px solid rgba(205,191,168,.72);border-radius:18px;padding:18px;box-shadow:0 18px 42px rgba(0,0,0,.22);text-align:center;}
+.rotateHintTitle{font-size:20px;font-weight:800;margin-bottom:8px;color:#264231;}
+.rotateHintText{font-size:14px;line-height:1.6;color:#5d615f;}
+
+@media (max-width: 950px) and (orientation: landscape){
+  .app{height:100dvh;}
+  .topbar{height:auto;min-height:44px;padding:6px 8px;gap:6px;}
+  .topbar .brand{font-size:14px;min-width:0;}
+  .chip{font-size:11px;padding:3px 6px;}
+  .btn,.btn.small{min-height:42px;padding:8px 10px;font-size:14px;}
+  .layout{grid-template-columns:minmax(290px,34%) minmax(0,66%) !important;grid-template-rows:1fr;min-height:0;height:calc(100dvh - 52px);}
+  .left{min-width:0;display:flex;flex-direction:column;}
+  .leftBody{padding:8px;overflow:auto;}
+  #missionSection{display:none;}
+  .section{padding:8px;margin-bottom:8px;border-radius:12px;}
+  .section h3{font-size:15px;margin-bottom:6px;}
+  .sectionLead,.note,.muted{font-size:12px;line-height:1.4;}
+  .coordCell .v{font-size:22px;}
+  .grid2,.grid3{gap:6px;}
+  .right{position:relative;grid-template-rows:1fr !important;gap:0;}
+  .rightMobileTabs{display:flex;position:absolute;top:10px;right:10px;z-index:8;background:rgba(255,253,248,.88);backdrop-filter:blur(8px);padding:6px;border:1px solid rgba(205,191,168,.78);border-radius:14px;box-shadow:0 10px 20px rgba(56,37,18,.12);}
+  .rightMobileTabs .btn{min-height:38px;font-size:13px;padding:6px 10px;}
+  .stageWrap,.mapWrap{padding:8px;height:100%;}
+  #stageCard,#mapCard{height:100%;min-height:0;}
+  .cardHead{height:40px;padding:6px 10px;font-size:14px;}
+  .viewTools{gap:6px;}
+  .viewTools label{display:none !important;}
+  #stagePosText,#stageViewHint{display:none;}
+  .stageBody{grid-template-columns:1fr !important;}
+  .stageSidebar{display:none;}
+  .stageViewport{min-height:0;}
+  .stageCanvasWrap{padding-top:0;min-height:100%;}
+  .right[data-mobile-view="live"] .stageWrap{display:block;height:100%;}
+  .right[data-mobile-view="live"] .mapWrap{display:none;height:0;}
+  .right[data-mobile-view="camera"] .stageWrap{display:block;height:100%;}
+  .right[data-mobile-view="camera"] .mapWrap{display:none;height:0;}
+  .right[data-mobile-view="camera"] .stageViewport{display:none;}
+  .right[data-mobile-view="camera"] .stageSidebar{display:block;border-left:none;height:100%;padding:8px;overflow:auto;}
+  .right[data-mobile-view="camera"] .stageHud{margin:0;height:100%;display:flex;flex-direction:column;}
+  .right[data-mobile-view="camera"] .stageHudHead{height:36px;}
+  .right[data-mobile-view="camera"] .miniWrap{flex:1;height:auto;min-height:180px;margin:8px;}
+  .right[data-mobile-view="camera"] .cameraInfoPanel{margin:0 8px 8px;}
+  .right[data-mobile-view="map"] .stageWrap{display:none;height:0;}
+  .right[data-mobile-view="map"] .mapWrap{display:block;height:100%;}
+  .right[data-mobile-view="map"] .canvasWrap{inset:40px 0 0 0;overflow:hidden;}
+  .right[data-mobile-view="map"] #mapCanvas{width:100%;height:100%;}
+  .leftTopTabs{display:none;}
+  .leftMobileTabs{display:flex;margin:6px 0 8px;padding-bottom:2px;}
+  .leftMobileTabs .btn{min-height:38px;font-size:13px;min-width:72px;}
+  .homePanel{padding:18px;width:min(100vw - 12px,1000px);}
+  .modeGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+  .modeCard{min-height:150px;padding:14px;}
+}
+
+@media (max-width: 950px) and (orientation: portrait){
+  .rotateHintOverlay.show{display:flex;}
+}

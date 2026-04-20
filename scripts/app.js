@@ -1912,6 +1912,7 @@
 
   if(window.FarmBotRightPane && window.FarmBotRightPane.init) window.FarmBotRightPane.init();
   if(window.FarmBotLeftPane && window.FarmBotLeftPane.init) window.FarmBotLeftPane.init();
+  if(window.FarmBotMobileShell && window.FarmBotMobileShell.init) window.FarmBotMobileShell.init();
   bind(); refreshSeqFields();
   setInterval(()=>{
     if(state.watering) return;

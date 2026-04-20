@@ -9,6 +9,7 @@
 <title>FarmBot 練習シミュレーター v23.3</title>
 <link rel="stylesheet" href="styles/app.css">
 <link rel="stylesheet" href="styles/mobile-foundation.css">
+<link rel="stylesheet" href="styles/mobile-landscape.css">
 </head>
 <body>
 <div class="homeScreen" id="homeScreen">
@@ -33,6 +34,13 @@
 </div>
 
 <div class="overlay" id="tutorialOverlay"></div>
+
+<div id="rotateHintOverlay" class="rotateHintOverlay" aria-hidden="true">
+  <div class="rotateHintCard">
+    <div class="rotateHintTitle">スマホは横向きで操作</div>
+    <div class="rotateHintText">動画ビューを広く使うため、スマートフォンでは横向きを基本表示にしています。</div>
+  </div>
+</div>
 
 <div class="app hidden" id="appRoot">
   <div class="topbar">
@@ -439,6 +447,7 @@
 <script src="scripts/views/farm-map.js"></script>
 <script src="scripts/views/right-pane.js"></script>
 <script src="scripts/views/left-pane.js"></script>
+<script src="scripts/views/mobile-shell.js"></script>
 <script src="scripts/app.js"></script>
 <script src="scripts/pwa-install.js"></script>
 </body>

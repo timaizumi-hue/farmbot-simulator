@@ -44,3 +44,11 @@ FarmBot 練習シミュレーター 再整理メモ
 - スマホ時の左パネル切替(操作/周辺機器/植物/Seq/ログ)を分離
 - PC側の既存タブと同期する構造に整理
 - 今後はスマホ用の左操作導線を left-pane.js / mobile-foundation.css で進める
+
+
+[v24.7 mobile landscape shell]
+- styles/mobile-landscape.css を追加
+- scripts/views/mobile-shell.js を追加
+- スマホ横向き時は右側を主画面化し、Live / Camera / Map を大きく切替
+- スマホ縦向き時は回転案内を表示
+- PC版レイアウトは維持
