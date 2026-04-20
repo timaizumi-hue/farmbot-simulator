@@ -1443,7 +1443,8 @@
       stageViewportEl.addEventListener('pointermove', e=>{
         if(!drag) return;
         const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
-        state.stageOrbit={yaw:drag.yaw + dx*0.008, pitch:clamp(drag.pitch + dy*0.006, 0.18, 1.18)};
+        const touchBoost = (e.pointerType==='touch' || (window.FarmBotMobileShell?.isPhoneLike?.() && window.FarmBotMobileShell?.isLandscape?.())) ? 1.9 : 1.0;
+        state.stageOrbit={yaw:drag.yaw + dx*0.008*touchBoost, pitch:clamp(drag.pitch + dy*0.006*touchBoost, 0.18, 1.18)};
         renderAll();
       });
       const clearDrag=()=>{ if(drag){ drag=null; saveState('自動保存'); } };

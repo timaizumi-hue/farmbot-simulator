@@ -3,6 +3,7 @@
 .rotateHintCard{max-width:320px;background:#fffdf8;border:1px solid rgba(205,191,168,.72);border-radius:18px;padding:18px;box-shadow:0 18px 42px rgba(0,0,0,.22);text-align:center;}
 .rotateHintTitle{font-size:20px;font-weight:800;margin-bottom:8px;color:#264231;}
 .rotateHintText{font-size:14px;line-height:1.6;color:#5d615f;}
+.rotateHintActions{margin-top:12px;display:flex;justify-content:center;}
 
 @media (max-width: 950px) and (orientation: landscape){
   .app{height:100dvh;}
@@ -10,7 +11,8 @@
   .topbar .brand{font-size:14px;min-width:0;}
   .chip{font-size:11px;padding:3px 6px;}
   .btn,.btn.small{min-height:42px;padding:8px 10px;font-size:14px;}
-  .layout{grid-template-columns:minmax(290px,34%) minmax(0,66%) !important;grid-template-rows:1fr;min-height:0;height:calc(100dvh - 52px);}
+  #stageViewHint{display:none !important;}
+  .layout{grid-template-columns:minmax(300px,40%) minmax(0,60%) !important;grid-template-rows:1fr;min-height:0;height:calc(100dvh - 52px);}
   .left{min-width:0;display:flex;flex-direction:column;}
   .leftBody{padding:8px;overflow:auto;}
   #missionSection{display:none;}
@@ -23,6 +25,7 @@
   .rightMobileTabs{display:flex;position:absolute;top:10px;right:10px;z-index:8;background:rgba(255,253,248,.88);backdrop-filter:blur(8px);padding:6px;border:1px solid rgba(205,191,168,.78);border-radius:14px;box-shadow:0 10px 20px rgba(56,37,18,.12);}
   .rightMobileTabs .btn{min-height:38px;font-size:13px;padding:6px 10px;}
   .stageWrap,.mapWrap{padding:8px;height:100%;}
+  .stageWrap{padding-bottom:6px;}
   #stageCard,#mapCard{height:100%;min-height:0;}
   .cardHead{height:40px;padding:6px 10px;font-size:14px;}
   .viewTools{gap:6px;}
@@ -31,7 +34,9 @@
   .stageBody{grid-template-columns:1fr !important;}
   .stageSidebar{display:none;}
   .stageViewport{min-height:0;}
-  .stageCanvasWrap{padding-top:0;min-height:100%;}
+  .stageCanvasWrap{padding:8px 10px 12px;min-height:100%;}
+  #stageCanvas{max-width:100%;max-height:100%;margin:0 auto;display:block;}
+  .stageViewport{touch-action:none;}
   .right[data-mobile-view="live"] .stageWrap{display:block;height:100%;}
   .right[data-mobile-view="live"] .mapWrap{display:none;height:0;}
   .right[data-mobile-view="camera"] .stageWrap{display:block;height:100%;}
