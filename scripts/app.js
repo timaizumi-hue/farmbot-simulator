@@ -645,6 +645,9 @@
     const farmMapView = window.FarmBotFarmMapView;
     if(!farmMapView || !farmMapView.drawFarmMap) return;
     farmMapView.drawFarmMap(ctx, size, {state, garden, soilWetStyle, mapToPx, drawTopPlant, getPlantWaterState});
+    if(window.FarmBotGrowthMode && window.FarmBotGrowthMode.drawMapOverlay){
+      try{ window.FarmBotGrowthMode.drawMapOverlay(ctx, size, {state, garden, mapToPx}); }catch(e){ console.warn('growth map overlay failed', e); }
+    }
   }
 
   function stageViewProject(x,y,z,cfg){
@@ -1249,6 +1252,7 @@
   }
   async function animateMove(target){
     if(running) return false;
+    window.dispatchEvent(new CustomEvent('farmbot:move-started', {detail:{target}}));
     const start=deepClone(state.pos), end={x:clamp(target.x,0,garden.w), y:clamp(target.y,0,garden.h), z:clamp(target.z,garden.zMin,garden.zMax)};
     const duration=Math.max(350,dist(start,end)*(12-state.speed/10));
     running={cancel:false}; setStatus(state.watering?'移動中（水やり）':'移動中'); state.recentPath={a:start,b:end};
@@ -1463,6 +1467,9 @@
         const idx=state.plants.findIndex(p=>Math.hypot(p.x-pt.x,p.y-pt.y)<45);
         if(idx>=0){ state.plants.splice(idx,1); log('植物削除'); saveState('自動保存'); renderAll(); }
         return;
+      }
+      if(window.FarmBotGrowthMode && window.FarmBotGrowthMode.handleMapClick){
+        try{ if(window.FarmBotGrowthMode.handleMapClick(pt)){ renderAll(); return; } }catch(err){ console.warn('growth map tool failed', err); }
       }
       setSelected(pt.x,pt.y,state.pos.z,true);
       tutorialEvent('mapClick',{x:pt.x,y:pt.y});
@@ -2039,16 +2046,19 @@
     if($('#appRoot')?.classList.contains('hidden')) initMode('free');
     const seasonal = {
       spring_growth:[
-        ['lettuce',360,520,'growing'],['spinach',620,520,'growing'],['radish',880,520,'growing'],
-        ['lettuce',360,310,'seedling'],['spinach',620,310,'growing'],['radish',880,310,'seedling']
+        ['lettuce',300,560,'growing'],['spinach',520,560,'growing'],['radish',740,560,'growing'],['lettuce',960,560,'seedling'],
+        ['spinach',300,360,'growing'],['radish',520,360,'seedling'],['lettuce',740,360,'growing'],['spinach',960,360,'seedling'],
+        ['radish',1180,460,'growing']
       ],
       summer_growth:[
-        ['tomato',420,520,'growing'],['cucumber',760,520,'growing'],['basil',1080,520,'growing'],
-        ['tomato',420,300,'seedling'],['cucumber',760,300,'seedling'],['basil',1080,300,'growing']
+        ['tomato',320,560,'growing'],['cucumber',560,560,'growing'],['basil',800,560,'growing'],['tomato',1040,560,'seedling'],
+        ['cucumber',320,340,'seedling'],['basil',560,340,'growing'],['tomato',800,340,'growing'],['cucumber',1040,340,'growing'],
+        ['basil',1240,450,'seedling']
       ],
       winter_growth:[
-        ['spinach',380,520,'growing'],['carrot',680,520,'growing'],['radish',980,520,'growing'],
-        ['spinach',380,310,'seedling'],['carrot',680,310,'seedling'],['radish',980,310,'seedling']
+        ['spinach',320,560,'growing'],['carrot',560,560,'growing'],['radish',800,560,'growing'],['spinach',1040,560,'seedling'],
+        ['carrot',320,340,'seedling'],['radish',560,340,'seedling'],['spinach',800,340,'growing'],['carrot',1040,340,'growing'],
+        ['radish',1240,450,'growing']
       ]
     };
     const spec = seasonal[kind] || seasonal.spring_growth;
