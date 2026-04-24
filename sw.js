@@ -1,4 +1,4 @@
-const CACHE_NAME = 'farmbot-pwa-v25-0-cassettes';
+const CACHE_NAME = 'farmbot-v25-11-growth-mode-visible-real';
 const ASSETS = [
   "./",
   "./index.html",
@@ -14,6 +14,8 @@ const ASSETS = [
   "./scripts/views/left-pane.js",
   "./scripts/views/right-pane.js",
   "./scripts/views/mobile-shell.js",
+  "./scripts/modules/training-basic/lesson-basic.js",
+  "./scripts/modules/growth-mode/growth-mode.js",
   "./scripts/modules/mode-cassettes.js",
   "./scripts/app.js",
   "./scripts/pwa-install.js",

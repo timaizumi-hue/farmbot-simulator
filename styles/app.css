@@ -415,3 +415,17 @@ input[type="range"]{accent-color:#3f7056}
   .homePanel{padding:22px}
   .modeCard{min-height:180px}
 }
+
+/* v25.3: 動作レビューを少し縮小して、練習中も畑マップを見やすくする */
+@media (min-width: 901px){
+  .right{grid-template-rows:minmax(360px,58%) minmax(300px,42%)!important;}
+  .mapWrap{min-height:300px;}
+  #mapCard,#mapCanvas{min-height:300px;}
+  .stageBody{grid-template-columns:minmax(0,1fr) 250px;}
+  .miniWrap{height:240px;}
+}
+@media (min-width: 1400px){
+  .right{grid-template-rows:minmax(390px,56%) minmax(330px,44%)!important;}
+  .mapWrap{min-height:330px;}
+  #mapCard,#mapCanvas{min-height:330px;}
+}

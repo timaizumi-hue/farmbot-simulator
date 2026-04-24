@@ -7,6 +7,10 @@
   let running = null;
   let tutorial = {active:false, step:0, stepDone:false, lessonId:null};
 
+  function lessonEvent(type, detail={}){
+    try{ window.dispatchEvent(new CustomEvent('farmbot:lesson-event', {detail:{type, ...detail}})); }catch{}
+  }
+
   let lastMapClickPx = {x:30,y:30};
   let mapInfoHideTimer = null;
   const __canvasSizeCache = new WeakMap();
@@ -321,6 +325,95 @@
     }
   }
 
+
+  function applyTrainingScenario(scenario){
+    if(!scenario) return;
+    const id = scenario.id || 'move_basic';
+    const target = scenario.target || {x:900,y:450,z:0};
+    const isWater = id === 'water_basic' || id === 'mission_water';
+    const isSeq = id === 'sequence_basic';
+    const missionSpec = scenario.mission || null;
+    const titleMap = {
+      move_basic:'基本操作レッスン',
+      water_basic:'水やりレッスン',
+      sequence_basic:'シークエンスレッスン',
+      mission_water:'課題モード：適量水やり'
+    };
+    const detailMap = {
+      move_basic:`初期位置 X0/Y0/Z0 から開始します。目標座標 X${Math.round(target.x)} / Y${Math.round(target.y)} / Z${Math.round(target.z||0)} を選択して Move してください。`,
+      water_basic:`水やり対象の株を用意しました。黄色の目標株 X${Math.round(target.x)} / Y${Math.round(target.y)} を選択し、移動後に Water ON/OFF を練習してください。`,
+      sequence_basic:`シークエンス対象の株を用意しました。黄色の目標株 X${Math.round(target.x)} / Y${Math.round(target.y)} を選択し、Move → 水量/半径 → 待機 → メッセージ → Home位置へ戻るMove → 実行の順で登録してください。`,
+      mission_water:`課題対象の株を用意しました。黄色の目標株を適量水やりしてください。簡易版では操作完了までを確認します。`
+    };
+    state = defaults();
+    state.mode = 'practice_quick';
+    state.pos = {x:0,y:0,z:0};
+    state.selected = {x:0,y:0,z:0};
+    state.stageZoom = 1.0;
+    state.mapZoom = 1.2;
+    state.waterRadius = missionSpec?.radius || (isWater ? 52 : 42);
+    state.waterRate = missionSpec?.rate || (isWater ? 6 : 5);
+    state.trainingScenario = {
+      id,
+      title:titleMap[id] || '練習レッスン',
+      target:{x:target.x,y:target.y,z:target.z||0},
+      tolerance: scenario.tolerance || 70,
+      mission: missionSpec ? {...missionSpec} : null
+    };
+    if(isWater || id === 'mission_water'){
+      const missionType = missionSpec?.type || (id === 'mission_water' ? 'lettuce' : 'lettuce');
+      state.plants = [
+        makePlant(target.x,target.y,missionType,'growing'),
+        makePlant(1160,620,'basil','growing'),
+        makePlant(1480,760,'radish','seedling')
+      ];
+    } else if(isSeq){
+      state.plants = [
+        makePlant(target.x,target.y,'tomato','growing'),
+        makePlant(720,380,'lettuce','seedling'),
+        makePlant(1380,700,'basil','growing')
+      ];
+    } else {
+      state.plants = [
+        makePlant(720,360,'lettuce','seedling'),
+        makePlant(target.x,target.y,'radish','growing'),
+        makePlant(1240,640,'basil','growing'),
+        makePlant(1740,760,'tomato','growing')
+      ];
+    }
+    state.sequence = [];
+    state.pathHistory = [];
+    state.recentPath = null;
+    state.waterCells = {};
+    state.waterHistory = [];
+    state.leafWater = {};
+    state.mission = {
+      title:titleMap[id] || '練習レッスン',
+      detail:detailMap[id] || '指定された目標に従って練習してください。',
+      done:false
+    };
+    if($('#appRoot')) $('#appRoot').classList.remove('hidden');
+    if($('#homeScreen')) $('#homeScreen').classList.add('hidden');
+    applyStateToControls();
+    if(id === 'mission_water') activateTab('sequence');
+    else if(isWater) activateTab('water');
+    if(isSeq) activateTab('sequence');
+    if(!isWater && !isSeq && id !== 'mission_water') activateTab('control');
+    renderSequence();
+    renderAll();
+    centerScrollableCanvas($('#stageCanvas'),0.5,0.55);
+    centerScrollableCanvas($('#mapCanvas'),0.5,0.5);
+    saveState('練習初期化');
+    log(`${titleMap[id] || '練習'} 初期化：目標 X${Math.round(target.x)} / Y${Math.round(target.y)} / Z${Math.round(target.z||0)}`);
+  }
+
+  function isNearTrainingTarget(pt){
+    const sc = state.trainingScenario;
+    if(!sc || !sc.target) return true;
+    const tol = sc.tolerance || 55;
+    return Math.hypot((pt.x||0)-sc.target.x, (pt.y||0)-sc.target.y) <= tol;
+  }
+
   function applyUiDensity(){
     const density = state.uiDensity || 'standard';
     document.body.classList.remove('compact','comfortable');
@@ -388,6 +481,7 @@
     }
     showMapInfo();
     renderAll();
+    lessonEvent('select', {selected: deepClone(state.selected), target: deepClone(state.trainingScenario?.target || null), targetOk: isNearTrainingTarget(state.selected)});
   }
   function setStatus(text){
     state.status=text;
@@ -1130,6 +1224,9 @@
     requestRender(true);
   }
   function stopContinuousWater(){
+    const waterEndTime = Date.now();
+    const waterSeconds = state.waterStartTime ? Math.max(0, (waterEndTime - state.waterStartTime) / 1000) : 0;
+    const waterDetail = {x: state.pos.x, y: state.pos.y, z: state.pos.z, radius: state.waterRadius, rate: state.waterRate, seconds: waterSeconds, amount: Math.round(state.waterRate * Math.max(1, waterSeconds) * 10) / 10};
     if(waterInterval){ clearInterval(waterInterval); waterInterval=null; }
     if(waterElapsedTimer){ clearInterval(waterElapsedTimer); waterElapsedTimer=null; }
     state.watering=false;
@@ -1137,6 +1234,7 @@
     setStatus('停止中');
     if($('#waterPulseLabel')) $('#waterPulseLabel').textContent='散水開始から 0.0秒';
     if($('#waterSprayModeLabel')) $('#waterSprayModeLabel').textContent='WATER ONで現在位置から継続散水';
+    window.dispatchEvent(new CustomEvent('farmbot:water-applied', {detail: waterDetail}));
     saveState('自動保存');
     renderAll();
   }
@@ -1163,9 +1261,9 @@
       requestAnimationFrame(frame);
     });
   }
-  async function goToSelected(){ const ok=await animateMove({x:+$('#inputX').value||0, y:+$('#inputY').value||0, z:clamp(+$('#inputZ').value||0,garden.zMin,garden.zMax)}); if(ok!==false) tutorialEvent('moveComplete',{type:'goTo',pos:deepClone(state.pos)}); }
-  async function goHome(){ if(running) return; await animateMove({x:0,y:0,z:0}); state.pos={x:0,y:0,z:0}; setSelected(0,0,0,true); log('Home 実行'); saveState('自動保存'); renderAll(); }
-  async function safeZ(){ if(running) return; await animateMove({x:state.pos.x,y:state.pos.y,z:0}); log('Safe Z 実行'); }
+  async function goToSelected(){ const ok=await animateMove({x:+$('#inputX').value||0, y:+$('#inputY').value||0, z:clamp(+$('#inputZ').value||0,garden.zMin,garden.zMax)}); if(ok!==false){ tutorialEvent('moveComplete',{type:'goTo',pos:deepClone(state.pos)}); lessonEvent('move', {pos:deepClone(state.pos), target: deepClone(state.trainingScenario?.target || null), targetOk: isNearTrainingTarget(state.pos)}); } }
+  async function goHome(){ if(running) return; await animateMove({x:0,y:0,z:0}); state.pos={x:0,y:0,z:0}; setSelected(0,0,0,true); log('Home 実行'); lessonEvent('home', {pos:deepClone(state.pos)}); saveState('自動保存'); renderAll(); }
+  async function safeZ(){ if(running) return; await animateMove({x:state.pos.x,y:state.pos.y,z:0}); log('Safe Z 実行'); lessonEvent('safeZ', {pos:deepClone(state.pos)}); }
   function stopMotion(){ if(running){ running.cancel=true; log('停止'); } if(state.watering) stopContinuousWater(); else { setStatus('停止中'); renderAll(); } }
 
   async function runSequence(){
@@ -1192,7 +1290,7 @@
       } else if(s.type==='home'){ await goHome();
       } else if(s.type==='message'){ log(s.arg||'メッセージ'); }
     }
-    setStatus(state.watering?'水やり中':'停止中'); log('シークエンス完了'); saveState('自動保存'); checkGoalMode();
+    setStatus(state.watering?'水やり中':'停止中'); log('シークエンス完了'); saveState('自動保存'); checkGoalMode(); lessonEvent('seqRun', {sequence:deepClone(state.sequence)});
   }
   function exportState(){
     const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
@@ -1237,6 +1335,7 @@
     info.querySelector('#mapSeqBtn').onclick=()=>{
       state.sequence.push({type:'move',x:Math.round(state.selected.x),y:Math.round(state.selected.y),z:Math.round(state.selected.z)});
       renderSequence(); renderAll(); saveState('自動保存'); log('マップからシークエンス追加');
+      lessonEvent('seqAdd', {seqType:'move', sequence:deepClone(state.sequence)});
     };
     mapInfoHideTimer = setTimeout(()=>{
       info.classList.add('hidden');
@@ -1363,8 +1462,8 @@
     $('#homeBtn').onclick=()=>goHome();
     $('#safeZBtn').onclick=()=>safeZ();
     $('#stopBtn').onclick=()=>stopMotion();
-    $('#waterStartBtn').onclick=()=>{ log('現在位置で水やり開始'); startContinuousWater(); tutorialEvent('waterOn'); };
-    $('#waterStopBtn').onclick=()=>{ if(state.watering) stopContinuousWater(); tutorialEvent('waterOff'); log('水やり停止'); };
+    $('#waterStartBtn').onclick=()=>{ log('現在位置で水やり開始'); startContinuousWater(); tutorialEvent('waterOn'); lessonEvent('waterOn', {pos:deepClone(state.pos), target:deepClone(state.trainingScenario?.target || null), targetOk:isNearTrainingTarget(state.pos)}); };
+    $('#waterStopBtn').onclick=()=>{ if(state.watering) stopContinuousWater(); tutorialEvent('waterOff'); lessonEvent('waterOff', {pos:deepClone(state.pos), target:deepClone(state.trainingScenario?.target || null), targetOk:isNearTrainingTarget(state.pos)}); log('水やり停止'); };
     $('#clearWaterBtn').onclick=()=>{ state.waterCells={}; state.waterHistory=[]; renderAll(); saveState('自動保存'); };
     $('#clearPathBtn').onclick=()=>{ state.pathHistory=[]; state.recentPath=null; renderAll(); saveState('自動保存'); };
     if($('#clearPathBtn2')) $('#clearPathBtn2').onclick=()=>{ state.pathHistory=[]; state.recentPath=null; renderAll(); saveState('自動保存'); };
@@ -1405,6 +1504,7 @@
       if(t==='set_water') s={type:t,radius:clamp(+$('#seqRadius').value||state.waterRadius,8,70),rate:clamp(+$('#seqRate').value||state.waterRate,1,14)};
       if(t==='reserve') s={type:t,at:$('#seqDateTime').value};
       state.sequence.push(s); renderSequence(); renderAll(); saveState('自動保存');
+      lessonEvent('seqAdd', {seqType:s.type, step:deepClone(s), sequence:deepClone(state.sequence)});
     };
     $('#runSeqBtn').onclick=()=>runSequence();
     $('#clearSeqBtn').onclick=()=>{ state.sequence=[]; renderSequence(); renderAll(); saveState('自動保存'); };
@@ -1910,6 +2010,44 @@
     ctx.restore();
   };
 
+
+
+  window.addEventListener('farmbot:training-command', (ev)=>{
+    const detail = ev.detail || {};
+    const map = {
+      startBasicMove:'move_basic',
+      startWaterBasic:'water_basic',
+      startSequenceBasic:'sequence_basic',
+      startMissionWater:'mission_water'
+    };
+    if(map[detail.command]){
+      applyTrainingScenario({id:map[detail.command], target:detail.target, tolerance:detail.tolerance});
+    }
+  });
+
+  window.FarmBotAppBridge = {
+    ensureFreeMode(){
+      if($('#appRoot')?.classList.contains('hidden')) initMode('free');
+      return true;
+    },
+    applyGrowthSession(growthSession){
+      if(!growthSession || !Array.isArray(growthSession.plants)) return;
+      if($('#appRoot')?.classList.contains('hidden')) initMode('free');
+      state.growthModeActive = true;
+      state.growthSeasonLabel = growthSession.label || '育成';
+      state.plants = growthSession.plants.map((p)=>{
+        const type = p.species || p.type || 'lettuce';
+        const stage = p.growth>=75 ? 'fruiting' : p.growth>=28 ? 'growing' : 'seedling';
+        return {id:p.id, type, x:p.x, y:p.y, stage, height:effectivePlantHeight(type, stage), health:p.health, water:p.water};
+      });
+      state.mission={title:'練習モードB / 育成中', detail:'通常のMove・周辺機器・シークエンスを使いながら、育成時間と植物状態を管理します。植物配置は育成開始時に固定されています。', done:false};
+      updateMission();
+      renderPlants(); renderAll(); saveState('自動保存');
+    },
+    getCurrentPosition(){ return deepClone(state.pos); },
+    render(){ renderAll(); },
+    activateTab
+  };
 
   if(window.FarmBotRightPane && window.FarmBotRightPane.init) window.FarmBotRightPane.init();
   if(window.FarmBotLeftPane && window.FarmBotLeftPane.init) window.FarmBotLeftPane.init();

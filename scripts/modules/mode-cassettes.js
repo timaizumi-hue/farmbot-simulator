@@ -20,7 +20,8 @@
     cards: [
       {id:'spring_growth', title:'春野菜', tag:'育成', desc:'レタス・ほうれん草・ラディッシュを中心に、苗から収穫までの水管理を体験します。', goal:'春野菜の成長段階に合わせて水やりとシークエンスを調整する。'},
       {id:'summer_growth', title:'夏野菜', tag:'育成', desc:'トマト・きゅうり・バジルを中心に、乾きやすい環境での水管理を体験します。', goal:'高温時の乾きやすさを見て、水量と頻度を調整する。'},
-      {id:'winter_growth', title:'冬野菜', tag:'育成', desc:'低温・乾きにくい条件で、過湿を避ける管理を体験します。', goal:'少ない水量と間隔を意識し、根腐れを避ける。'}
+      {id:'winter_growth', title:'冬野菜', tag:'育成', desc:'低温・乾きにくい条件で、過湿を避ける管理を体験します。', goal:'少ない水量と間隔を意識し、根腐れを避ける。'},
+      {id:'load_growth', title:'保存データを読込', tag:'再開', desc:'前回保存した育成データから再開します。植物配置・品種・進行日数は保存時の状態を維持します。', goal:'途中から同じ畑を続ける。'}
     ]
   };
 
@@ -101,10 +102,29 @@
   function startCassette(pack, card){
     saveSelection(pack, card);
     closeOverlay();
+
+    // 練習モードBは本体の通常モードへ遷移させず、育成カセットを直接開く。
+    // 植物は開始時に自動生成し、そのセッション内では変更不可。
+    if(pack.title === '練習モードB'){
+      if(window.FarmBotBasicLesson) window.FarmBotBasicLesson.stop();
+      if(window.FarmBotGrowthMode){
+        if(card.id === 'load_growth') window.FarmBotGrowthMode.openLoad();
+        else window.FarmBotGrowthMode.open(card.id);
+        window.setTimeout(applyCassetteHud, 80);
+        return;
+      }
+      alert('育成モードの読込に失敗しました。ページを再読み込みしてください。');
+      return;
+    }
+
     const targetMode = card.targetMode || pack.mode;
     const modeCard = qs(`.modeCard[data-mode="${targetMode}"]`);
     if(modeCard && typeof modeCard.onclick === 'function'){
       modeCard.onclick();
+      if(window.FarmBotBasicLesson){
+        if(pack.title === '練習モードA') window.FarmBotBasicLesson.start(card.id);
+        else window.FarmBotBasicLesson.stop();
+      }
       window.setTimeout(applyCassetteHud, 80);
       window.setTimeout(applyCassetteHud, 400);
     } else {

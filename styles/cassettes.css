@@ -5,3 +5,183 @@
 .cassetteKicker{font-size:12px;font-weight:800;letter-spacing:.12em;color:#477153;text-transform:uppercase}.cassetteHead h2{margin:4px 0 6px;font-size:30px}.cassetteHead p{margin:0;color:#627168}.cassetteClose{border:0;background:#e8eee8;border-radius:999px;width:42px;height:42px;font-size:26px;line-height:1;cursor:pointer;color:#34433a}.cassetteClose:hover{background:#dbe7dd}
 .cassetteGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:18px 26px 20px}.cassetteCard{text-align:left;border:1px solid rgba(55,83,63,.16);background:#fff;border-radius:18px;padding:18px;min-height:170px;box-shadow:0 8px 22px rgba(34,54,42,.08);cursor:pointer;display:flex;flex-direction:column;gap:8px}.cassetteCard:hover{transform:translateY(-1px);box-shadow:0 14px 30px rgba(34,54,42,.14);border-color:rgba(63,128,78,.34)}.cassetteCard strong{font-size:20px}.cassetteCard span:not(.cassetteTag){color:#596960;line-height:1.55}.cassetteCard em{font-style:normal;margin-top:auto;color:#2f6d3e;background:#eef7ef;border-radius:12px;padding:8px 10px;font-size:13px}.cassetteTag{align-self:flex-start;background:#2e7d32;color:#fff;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800}.cassetteFooter{padding:0 26px 24px}.cassetteNote{font-size:13px;color:#67766d;background:#eef3ee;border-radius:14px;padding:12px 14px}.cassetteDock{background:linear-gradient(135deg,#eef8ef,#f7fbf7);border:1px solid rgba(61,117,72,.22);border-radius:16px;padding:12px;margin-bottom:12px}.cassetteDockHead{display:flex;justify-content:space-between;gap:8px;align-items:center;color:#53655a;font-size:12px}.cassetteDockHead strong{font-size:14px;color:#23382a}.cassetteDockText{font-size:13px;line-height:1.45;margin:8px 0;color:#405247}.cassetteDockActions{display:flex;gap:8px;flex-wrap:wrap}.cassetteMissionTitle{font-weight:800;margin-bottom:6px}.cassetteMissionDesc{margin-bottom:6px}.cassetteMissionGoal{font-size:13px;color:#2d683b;background:rgba(73,143,80,.12);border-radius:10px;padding:7px 9px}
 @media(max-width:780px){.cassetteOverlay{padding:10px}.cassettePanel{border-radius:18px;max-height:94dvh}.cassetteHead{padding:16px}.cassetteHead h2{font-size:24px}.cassetteGrid{grid-template-columns:1fr;padding:14px 16px}.cassetteCard{min-height:140px}.cassetteFooter{padding:0 16px 16px}}
+
+/* v25.1: 練習A 基本操作レッスン */
+.basicLessonPanel{
+  margin:0 0 10px;
+  padding:10px;
+  border:1px solid rgba(90,140,105,.28);
+  border-radius:14px;
+  background:linear-gradient(180deg,rgba(235,250,238,.96),rgba(246,251,246,.94));
+  box-shadow:0 8px 22px rgba(32,74,45,.10);
+  color:#1f3326;
+}
+.basicLessonPanel.hidden{display:none!important;}
+.basicLessonHead{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;}
+.basicLessonHead small{display:block;color:#5b7f63;font-weight:800;letter-spacing:.04em;margin-bottom:2px;}
+.basicLessonHead h3{margin:0;font-size:16px;line-height:1.2;}
+.basicLessonNow{background:#fff;border:1px solid rgba(64,100,70,.18);border-radius:12px;padding:9px;margin-bottom:8px;}
+.basicLessonNow.complete{background:#edf8ee;border-color:rgba(72,150,90,.35);}
+.basicLessonNow strong{display:block;font-size:14px;margin-bottom:4px;}
+.basicLessonNow p{margin:0;font-size:13px;line-height:1.55;}
+.basicLessonNow em{display:block;margin-top:5px;font-size:12px;color:#58715f;font-style:normal;}
+.basicLessonSteps{list-style:none;margin:0;padding:0;display:grid;gap:6px;}
+.basicLessonSteps li{display:grid;grid-template-columns:24px 1fr;gap:7px;align-items:start;padding:7px;border-radius:10px;background:rgba(255,255,255,.72);border:1px solid rgba(80,110,90,.12);opacity:.72;}
+.basicLessonSteps li.active{opacity:1;border-color:rgba(36,128,64,.42);box-shadow:inset 3px 0 0 #3f9b58;}
+.basicLessonSteps li.done{opacity:.92;background:#f4fbf4;}
+.basicLessonSteps li>span{width:22px;height:22px;border-radius:999px;background:#d9eadc;display:grid;place-items:center;font-size:12px;font-weight:900;color:#244a2d;}
+.basicLessonSteps li.active>span{background:#4caa63;color:#fff;}
+.basicLessonSteps li.done>span{background:#2f8d45;color:#fff;}
+.basicLessonSteps strong{display:block;font-size:13px;margin-bottom:2px;}
+.basicLessonSteps small{display:block;font-size:12px;line-height:1.35;color:#4d6254;}
+.basicLessonActions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:8px;}
+@media(max-width:900px){
+  .basicLessonPanel{font-size:13px;padding:8px;margin-bottom:8px;}
+  .basicLessonSteps small{display:none;}
+}
+
+.basicLessonNow .lessonTarget{display:inline-block;margin-top:6px;padding:4px 8px;border-radius:999px;background:#fff5bf;border:1px solid rgba(160,124,0,.25);font-weight:800;color:#5b4700;}
+
+
+/* v25.5 mission scoring */
+.missionCard{
+  margin:8px 0;
+  padding:10px;
+  border:1px solid #d8c27a;
+  background:linear-gradient(180deg,#fff7cf,#f7efd0);
+  border-radius:10px;
+  font-size:12px;
+  line-height:1.55;
+}
+.missionCard strong{display:block;font-size:13px;margin-bottom:4px;color:#5e4711}
+.missionScore{
+  margin-top:10px;
+  padding:10px;
+  border:1px solid var(--line,#d8d1c5);
+  background:#f6f4ee;
+  border-radius:10px;
+}
+.missionScore .scoreHead{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:8px;
+}
+.missionScore .scoreHead strong{
+  font-size:26px;
+  line-height:1;
+  padding:4px 10px;
+  border-radius:10px;
+  background:#2f6f3e;
+  color:#fff;
+}
+.missionScore.SS .scoreHead strong{background:#8b5cf6}
+.missionScore.S .scoreHead strong{background:#168455}
+.missionScore.A .scoreHead strong{background:#2274a5}
+.missionScore.B .scoreHead strong{background:#b7791f}
+.missionScore.C .scoreHead strong{background:#9b2c2c}
+.missionScore .scoreHead em{margin-left:auto;font-style:normal;font-weight:700}
+.missionScore ul{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.missionScore li{
+  display:grid;
+  grid-template-columns:72px 64px 1fr;
+  gap:8px;
+  align-items:center;
+  font-size:12px;
+  padding:6px;
+  border-radius:8px;
+  background:#fff;
+  border:1px solid rgba(0,0,0,.06);
+}
+.missionScore li strong{text-align:right}
+.missionScore li small{color:#665f55}
+
+/* Growth Mode B */
+.growthOverlay{position:fixed;inset:0;background:rgba(15,20,18,.72);z-index:9100;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px)}
+.growthOverlay.hidden{display:none}.growthShell{width:min(1180px,96vw);height:min(760px,92dvh);background:#f7f4ec;border:1px solid #d8d0bf;border-radius:18px;box-shadow:0 24px 70px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;color:#263027}.growthTopbar{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #ded5c5;background:#fffaf0}.growthTopbar h2{margin:4px 0 0;font-size:22px}.growthTopActions{display:flex;gap:8px;align-items:center}.growthContent{display:grid;grid-template-columns:280px 1fr 330px;gap:12px;padding:12px;min-height:0;flex:1}.growthPanel{background:#fff;border:1px solid #ded8cc;border-radius:14px;padding:12px;min-height:0;overflow:auto}.growthPanel h3{margin:8px 0 10px;font-size:16px}.growthStat{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px dashed #e2dbcf}.growthStat span{color:#667065}.growthStat strong{font-size:15px;text-align:right}.growthControls{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.growthSaveState{font-size:12px;color:#667065;background:#f3efe5;border-radius:10px;padding:8px;margin-bottom:10px}.growthForecast{display:grid;gap:6px}.growthWeatherDay{display:grid;grid-template-columns:46px 52px 1fr;gap:5px;align-items:center;font-size:12px;padding:7px;border:1px solid #eee6d8;border-radius:10px;background:#fbfaf6}.growthWeatherDay em{font-style:normal;text-align:right;color:#536055}.growthPlantList{display:grid;gap:10px}.growthPlantCard{border:1px solid #e2dbce;border-radius:14px;padding:10px;background:#fbfaf6}.growthPlantHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}.growthPlantHead span{padding:3px 8px;border-radius:999px;font-size:12px}.growthPlantHead .good{background:#dff3df;color:#276b32}.growthPlantHead .warn{background:#fff1c7;color:#7a5600}.growthPlantHead .bad{background:#ffd9d4;color:#8b2d22}.growthBars{display:grid;gap:7px}.growthBars label{display:grid;grid-template-columns:44px 1fr 42px;gap:8px;align-items:center;font-size:12px}.growthBars meter{width:100%;height:12px}.growthBars em{font-style:normal;text-align:right}.growthPlantActions{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:9px;font-size:12px;color:#667065}.growthSchedulerForm{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}.growthSchedulerForm label{font-size:12px;display:grid;gap:4px}.growthSchedulerForm select,.growthSchedulerForm input{min-height:34px;border:1px solid #d8d0bf;border-radius:8px;padding:4px 6px;background:#fff}.growthScheduleList{display:grid;gap:7px;margin-bottom:12px}.growthScheduleItem{display:grid;grid-template-columns:1fr auto;gap:5px;align-items:center;border:1px solid #e2dbce;border-radius:10px;padding:8px;background:#fbfaf6}.growthScheduleItem span{font-size:12px;color:#667065;grid-column:1/2}.growthScheduleItem button{grid-column:2/3;grid-row:1/3}.growthLog{font-size:12px;line-height:1.6;background:#f7f4ec;border-radius:10px;padding:8px;max-height:180px;overflow:auto}.growthLog div{border-bottom:1px dashed #e2dbcf;padding:3px 0}@media (max-width:900px){.growthOverlay{padding:4px}.growthShell{width:100vw;height:100dvh;border-radius:0}.growthContent{grid-template-columns:240px 1fr 270px;gap:6px;padding:6px}.growthPanel{padding:8px}.growthTopbar{padding:8px 10px}.growthTopbar h2{font-size:17px}.growthSchedulerForm{grid-template-columns:1fr}.growthControls{grid-template-columns:1fr 1fr}}
+.growthSub{margin:4px 0 0;color:#667065;font-size:12px}.growthMapMini{background:#eef1e8;border:1px solid #d8d0bf;border-radius:12px;margin-bottom:10px;overflow:hidden}.growthMapMini svg{display:block;width:100%;height:150px}.growthMapMini rect{fill:#e4d6bb;stroke:#9b8c70;stroke-width:1}.growthMapMini circle{fill:#5f9f52;stroke:#2f5e2b;stroke-width:2}.growthMapMini circle.dead{fill:#9a8f7d;stroke:#675c4d}.growthMapMini text{font-size:12px;fill:#344034}.growthLockNote{font-size:12px;color:#5d675e;background:#f1eadc;border:1px solid #e1d7c5;border-radius:10px;padding:7px 9px;margin-bottom:10px}.growthTopbar{gap:16px}.growthTopbar .growthSub{max-width:720px}@media (max-width:900px){.growthMapMini svg{height:120px}.growthSub{display:none}}
+
+/* v25.9: 育成モードBは本体を置き換えず、通常操作と並行するHUDに変更 */
+.growthOverlay{
+  position:fixed;
+  inset:auto 12px 12px auto;
+  width:min(920px, calc(100vw - 24px));
+  height:min(560px, calc(100dvh - 92px));
+  background:transparent;
+  z-index:5200;
+  display:block;
+  padding:0;
+  backdrop-filter:none;
+  pointer-events:none;
+}
+.growthOverlay.hidden{display:none!important;}
+.growthOverlay .growthShell{
+  width:100%;
+  height:100%;
+  background:#f7f4ec;
+  border:1px solid #d8d0bf;
+  border-radius:18px;
+  box-shadow:0 18px 56px rgba(0,0,0,.28);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  color:#263027;
+  pointer-events:auto;
+}
+.growthOverlay.minimized{width:min(460px, calc(100vw - 24px));height:auto;}
+.growthOverlay.minimized .growthShell{height:auto;}
+.growthOverlay.minimized .growthContent{display:none;}
+.growthOverlay.minimized .growthTopbar{border-bottom:0;}
+.growthOverlay.minimized .growthSub{display:block;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.growthOverlay.minimized .growthTopbar h2{font-size:16px;margin:2px 0 0;}
+.growthOverlay .growthContent{display:grid;grid-template-columns:260px 1fr 310px;gap:10px;padding:10px;min-height:0;flex:1;}
+.growthOverlay .growthPanel{min-height:0;overflow:auto;}
+@media (max-width:900px){
+  .growthOverlay{inset:auto 6px 6px 6px;width:auto;height:min(74dvh, 520px);}
+  .growthOverlay.minimized{width:auto;height:auto;}
+  .growthOverlay .growthShell{border-radius:14px;}
+  .growthOverlay .growthContent{grid-template-columns:220px 1fr 250px;gap:6px;padding:6px;}
+}
+
+
+/* Growth mode always-visible time dashboard (v25.10) */
+.growthTimeDock{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:9200;width:min(1120px,calc(100vw - 24px));background:rgba(255,250,240,.96);border:1px solid #d8d0bf;border-radius:16px;box-shadow:0 12px 34px rgba(0,0,0,.20);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 12px;color:#263027;backdrop-filter:blur(4px)}
+.growthTimeDock.hidden{display:none!important}.growthTimeMain{display:flex;align-items:center;gap:10px;min-width:0;flex-wrap:wrap;font-size:13px}.growthTimeMain strong{font-size:18px;white-space:nowrap}.growthTimeMain span{white-space:nowrap}.growthTimeBadge{background:#253529;color:#fff;border-radius:999px;padding:4px 9px;font-size:12px;letter-spacing:.04em}.growthTimeActions{display:flex;align-items:center;gap:6px;flex:0 0 auto}.growthTimeActions .btn.small{min-height:30px;padding:4px 9px;font-size:12px}
+@media (max-width:900px){.growthTimeDock{top:6px;width:calc(100vw - 12px);padding:6px 7px;border-radius:12px;gap:6px}.growthTimeMain{gap:6px;font-size:11px}.growthTimeMain strong{font-size:14px}.growthTimeBadge{padding:3px 6px;font-size:10px}.growthTimeActions{gap:4px}.growthTimeActions .btn.small{min-height:28px;padding:3px 6px;font-size:11px}}
+
+/* v25.11: Growth mode B consistency fix. Time/weather dock is always visible during a growth session. */
+.growthTimeDock{
+  position:fixed!important;
+  left:50%!important;
+  top:8px!important;
+  transform:translateX(-50%)!important;
+  z-index:9800!important;
+  width:min(1180px, calc(100vw - 20px))!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:10px!important;
+  padding:8px 11px!important;
+  background:rgba(255,250,239,.98)!important;
+  border:1px solid #d5c8b3!important;
+  border-radius:14px!important;
+  box-shadow:0 12px 34px rgba(0,0,0,.20)!important;
+  color:#253025!important;
+  pointer-events:auto!important;
+}
+.growthTimeDock.hidden{display:none!important;}
+.growthTimeMain{display:flex!important;align-items:center!important;gap:9px!important;flex-wrap:wrap!important;min-width:0!important;font-size:13px!important;}
+.growthTimeMain strong{font-size:17px!important;white-space:nowrap!important;}
+.growthTimeMain span{white-space:nowrap!important;}
+.growthTimeBadge{background:#253529!important;color:#fff!important;border-radius:999px!important;padding:4px 9px!important;font-size:12px!important;}
+.growthTimeActions{display:flex!important;gap:6px!important;align-items:center!important;flex:0 0 auto!important;}
+.growthOverlay{z-index:9700!important;}
+.growthOverlay.hidden{display:none!important;}
+.growthPlantHead .good{background:#dff3df;color:#276b32}.growthPlantHead .warn{background:#fff1c7;color:#7a5600}.growthPlantHead .bad{background:#ffd9d4;color:#8b2d22}
+@media (max-width:900px){
+  .growthTimeDock{top:5px!important;width:calc(100vw - 10px)!important;padding:5px 6px!important;gap:5px!important;border-radius:10px!important;}
+  .growthTimeMain{gap:5px!important;font-size:11px!important;}
+  .growthTimeMain strong{font-size:13px!important;}
+  .growthTimeActions{gap:4px!important;}
+  .growthTimeActions .btn.small{min-height:28px!important;padding:3px 6px!important;font-size:11px!important;}
+}

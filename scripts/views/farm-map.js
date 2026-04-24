@@ -55,6 +55,25 @@
       ctx.strokeStyle='rgba(255,255,255,.05)'; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(size.w,y); ctx.stroke();
     }
 
+    if(state.trainingScenario && state.trainingScenario.target){
+      const tp=mapToPx(state.trainingScenario.target,size);
+      ctx.save();
+      ctx.strokeStyle='rgba(255,230,80,.95)';
+      ctx.fillStyle='rgba(255,230,80,.12)';
+      ctx.lineWidth=3;
+      ctx.setLineDash([8,5]);
+      ctx.beginPath(); ctx.arc(tp.x,tp.y,26,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.strokeStyle='rgba(60,45,0,.92)';
+      ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(tp.x-34,tp.y); ctx.lineTo(tp.x+34,tp.y); ctx.moveTo(tp.x,tp.y-34); ctx.lineTo(tp.x,tp.y+34); ctx.stroke();
+      ctx.fillStyle='rgba(45,35,0,.86)';
+      ctx.font='bold 12px sans-serif';
+      ctx.textAlign='left'; ctx.textBaseline='bottom';
+      ctx.fillText(`目標 X${Math.round(state.trainingScenario.target.x)} / Y${Math.round(state.trainingScenario.target.y)}`, tp.x+12, tp.y-12);
+      ctx.restore();
+    }
+
     (state.plants||[]).forEach(p=>{
       const pp=mapToPx(p,size);
       const info=getPlantWaterState(p);
