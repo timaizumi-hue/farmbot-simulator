@@ -1216,6 +1216,7 @@
     state.watering=true;
     state.waterStartTime=Date.now();
     setStatus('水やり中');
+    window.dispatchEvent(new CustomEvent('farmbot:water-started', {detail:{x:state.pos.x,y:state.pos.y,z:state.pos.z,radius:state.waterRadius,rate:state.waterRate}}));
     addWaterAt(state.pos, state.waterRadius, state.waterRate, 1.35);
     waterInterval=setInterval(()=>{
       if(!state.watering) return;
@@ -2034,6 +2035,31 @@
     }
   });
 
+  function seedGrowthSeasonLayout(kind){
+    if($('#appRoot')?.classList.contains('hidden')) initMode('free');
+    const seasonal = {
+      spring_growth:[
+        ['lettuce',360,520,'growing'],['spinach',620,520,'growing'],['radish',880,520,'growing'],
+        ['lettuce',360,310,'seedling'],['spinach',620,310,'growing'],['radish',880,310,'seedling']
+      ],
+      summer_growth:[
+        ['tomato',420,520,'growing'],['cucumber',760,520,'growing'],['basil',1080,520,'growing'],
+        ['tomato',420,300,'seedling'],['cucumber',760,300,'seedling'],['basil',1080,300,'growing']
+      ],
+      winter_growth:[
+        ['spinach',380,520,'growing'],['carrot',680,520,'growing'],['radish',980,520,'growing'],
+        ['spinach',380,310,'seedling'],['carrot',680,310,'seedling'],['radish',980,310,'seedling']
+      ]
+    };
+    const spec = seasonal[kind] || seasonal.spring_growth;
+    state.plants = spec.map(([type,x,y,stage])=>makePlant(x,y,type,stage));
+    state.sequence = Array.isArray(state.sequence) ? state.sequence : [];
+    state.pathHistory=[]; state.recentPath=null; state.waterCells={}; state.waterHistory=[]; state.leafWater={};
+    state.pos = {x:0,y:0,z:0}; state.selected={x:0,y:0,z:0};
+    applyStateToControls(); renderAll(); saveState('育成配置');
+    return deepClone(state.plants || []);
+  }
+
   window.FarmBotAppBridge = {
     ensureFreeMode(){
       if($('#appRoot')?.classList.contains('hidden')) initMode('free');
@@ -2056,6 +2082,7 @@
       renderPlants(); renderAll(); saveState('自動保存');
     },
     getPlantsSnapshot(){ return deepClone(state.plants || []); },
+    seedGrowthSeasonLayout,
     setPlantLock(locked){ state.growthModeActive = !!locked; state.growthPlantLocked = !!locked; updateGrowthPlantLockUI(); saveState('自動保存'); },
     getCurrentPosition(){ return deepClone(state.pos); },
     render(){ renderAll(); },
