@@ -1,4 +1,4 @@
-const CACHE_NAME = 'farmbot-v25-11-growth-mode-visible-real';
+const CACHE_NAME = 'farmbot-v25-13-growth-main-screen-source';
 const ASSETS = [
   "./",
   "./index.html",

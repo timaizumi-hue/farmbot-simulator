@@ -489,6 +489,13 @@
     chip.textContent=text;
     chip.className='chip'+(text.includes('停止')?' stop':text.includes('予約')?' warn':'');
   }
+  function isGrowthPlantLocked(){ return !!state.growthModeActive && !!state.growthPlantLocked; }
+  function updateGrowthPlantLockUI(){
+    document.body.classList.toggle('growth-plant-locked', isGrowthPlantLocked());
+    const locked = isGrowthPlantLocked();
+    ['plantMode','clearPlantsBtn','seedPracticeBtn'].forEach(id=>{ const el=$('#'+id); if(el){ el.disabled=locked; el.title=locked?'育成モード中は植物配置を変更できません':''; } });
+    if(locked && $('#plantMode')) $('#plantMode').value='off';
+  }
   function clearPathAndWater(){ state.pathHistory=[]; state.recentPath=null; state.waterCells={}; state.waterHistory=[]; state.leafWater={}; }
   function initMode(mode){
     state = safeLoad(mode) || defaults();
@@ -506,6 +513,7 @@
       return {...p, stage, height:effectivePlantHeight(p.type, stage)};
     });
     applyStateToControls();
+    updateGrowthPlantLockUI();
     $('#appRoot').classList.remove('hidden');
     $('#homeScreen').classList.add('hidden');
     renderAll();
@@ -1448,6 +1456,7 @@
       lastMapClickPx={x:e.clientX-rect.left,y:e.clientY-rect.top};
       const pt=pxToMap({x:e.clientX-rect.left,y:e.clientY-rect.top},size);
       const mode=$('#plantMode').value;
+      if(isGrowthPlantLocked() && (mode==='place' || mode==='delete')){ log('育成モード中は植物配置を変更できません'); $('#plantMode').value='off'; updateGrowthPlantLockUI(); return; }
       if(mode==='place'){ state.plants.push(makePlant(pt.x,pt.y,$('#plantType').value,$('#plantStage').value)); log('植物配置'); saveState('自動保存'); renderAll(); return; }
       if(mode==='delete'){
         const idx=state.plants.findIndex(p=>Math.hypot(p.x-pt.x,p.y-pt.y)<45);
@@ -1490,8 +1499,8 @@
     $('#inputZ').oninput=e=>{ e.target.value=clamp(+e.target.value||0,garden.zMin,garden.zMax); };
     $('#seqZ').oninput=e=>{ e.target.value=clamp(+e.target.value||0,garden.zMin,garden.zMax); };
 
-    $('#clearPlantsBtn').onclick=()=>{ state.plants=[]; renderAll(); saveState('自動保存'); };
-    $('#seedPracticeBtn').onclick=()=>{ const targetMode = state.mode==='free' ? 'practice_quick' : state.mode; seedMode(targetMode); state.mode = targetMode; applyStateToControls(); renderAll(); saveState('読込'); };
+    $('#clearPlantsBtn').onclick=()=>{ if(isGrowthPlantLocked()){ log('育成モード中は植物を全消去できません'); return; } state.plants=[]; renderAll(); saveState('自動保存'); };
+    $('#seedPracticeBtn').onclick=()=>{ if(isGrowthPlantLocked()){ log('育成モード中は練習配置を入れ替えできません'); return; } const targetMode = state.mode==='free' ? 'practice_quick' : state.mode; seedMode(targetMode); state.mode = targetMode; applyStateToControls(); updateGrowthPlantLockUI(); renderAll(); saveState('読込'); };
     $('#plantType').onchange=()=>{ $('#plantWaterHint').textContent = waterRangeText($('#plantType').value, $('#plantStage').value); };
     $('#plantStage').onchange=()=>{ $('#plantWaterHint').textContent = waterRangeText($('#plantType').value, $('#plantStage').value); };
     $('#seqType').onchange=refreshSeqFields;
@@ -2034,6 +2043,7 @@
       if(!growthSession || !Array.isArray(growthSession.plants)) return;
       if($('#appRoot')?.classList.contains('hidden')) initMode('free');
       state.growthModeActive = true;
+      state.growthPlantLocked = true;
       state.growthSeasonLabel = growthSession.label || '育成';
       state.plants = growthSession.plants.map((p)=>{
         const type = p.species || p.type || 'lettuce';
@@ -2042,8 +2052,11 @@
       });
       state.mission={title:'練習モードB / 育成中', detail:'通常のMove・周辺機器・シークエンスを使いながら、育成時間と植物状態を管理します。植物配置は育成開始時に固定されています。', done:false};
       updateMission();
+      updateGrowthPlantLockUI();
       renderPlants(); renderAll(); saveState('自動保存');
     },
+    getPlantsSnapshot(){ return deepClone(state.plants || []); },
+    setPlantLock(locked){ state.growthModeActive = !!locked; state.growthPlantLocked = !!locked; updateGrowthPlantLockUI(); saveState('自動保存'); },
     getCurrentPosition(){ return deepClone(state.pos); },
     render(){ renderAll(); },
     activateTab
