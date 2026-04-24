@@ -52,3 +52,27 @@ FarmBot 練習シミュレーター 再整理メモ
 - スマホ横向き時は右側を主画面化し、Live / Camera / Map を大きく切替
 - スマホ縦向き時は回転案内を表示
 - PC版レイアウトは維持
+
+=== v25.0 カセット式モード整理 ===
+追加:
+- scripts/modules/mode-cassettes.js
+- styles/cassettes.css
+- modules/training-basic/README.txt
+- modules/growth-mode/README.txt
+
+目的:
+ホームから練習モードA/Bを直接開始するのではなく、ゲームカセットのように「目次パック」を開いて、練習内容を選んで読み込む構造へ整理しました。
+
+練習モードA:
+- 基本操作
+- 水やり
+- シークエンス
+- 課題モード
+
+練習モードB:
+- 春野菜
+- 夏野菜
+- 冬野菜
+
+今後の拡張:
+各モードの採点、成長エンジン、季節データは modules/ 配下に追加し、本体 app.js への直接追加を減らします。

@@ -2,7 +2,7 @@
   "name": "FarmBot 練習シミュレーター",
   "short_name": "FarmBot",
   "description": "実機なしで FarmBot の操作・シークエンス・水やりを練習する教育用シミュレーター",
-  "start_url": "./index.html",
+  "start_url": "./index.html?v=250",
   "scope": "./",
   "display": "standalone",
   "orientation": "landscape",
