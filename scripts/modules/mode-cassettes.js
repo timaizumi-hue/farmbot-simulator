@@ -84,6 +84,29 @@
     qs('#cassetteSubtitle', overlay).textContent = pack.subtitle;
     const grid = qs('#cassetteGrid', overlay);
     grid.innerHTML = '';
+    const oldOptions = qs('#growthStartOptions', overlay);
+    if(oldOptions) oldOptions.remove();
+    if(pack.title === '練習モードB'){
+      const opt = document.createElement('div');
+      opt.id = 'growthStartOptions';
+      opt.className = 'growth-difficulty';
+      opt.innerHTML = `
+        <label>難易度
+          <select id="growthDifficultySelect">
+            <option value="beginner">初級：水分許容広め・イベント少なめ</option>
+            <option value="normal" selected>中級：標準</option>
+            <option value="advanced">上級：水分許容狭め・イベントやや多め</option>
+          </select>
+        </label>
+        <label>植物量
+          <select id="growthPlantAmountSelect">
+            <option value="small">少ない（6株）</option>
+            <option value="medium" selected>中程度（9株）</option>
+            <option value="large">多い（12株）</option>
+          </select>
+        </label>`;
+      grid.before(opt);
+    }
     pack.cards.forEach(card => {
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -109,7 +132,11 @@
       if(window.FarmBotBasicLesson) window.FarmBotBasicLesson.stop();
       if(window.FarmBotGrowthMode){
         if(card.id === 'load_growth') window.FarmBotGrowthMode.openLoad();
-        else window.FarmBotGrowthMode.open(card.id);
+        else {
+          const difficulty = qs('#growthDifficultySelect')?.value || 'normal';
+          const plantAmount = qs('#growthPlantAmountSelect')?.value || 'medium';
+          window.FarmBotGrowthMode.open(card.id, {difficulty, plantAmount});
+        }
         window.setTimeout(applyCassetteHud, 80);
         return;
       }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'farmbot-v25-16-growth-ui-tools-tidy';
+const CACHE_NAME = 'farmbot-v25-17-growth-hud-clock-difficulty';
 const ASSETS = [
   "./",
   "./index.html",
