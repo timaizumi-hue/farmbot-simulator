@@ -48,10 +48,7 @@
   }
   function basePlantHeight(type){ return heights[type] || 50; }
   function effectivePlantHeight(type, stage){ return Math.round(basePlantHeight(type) * (stageHeightScale[stage] || 1)); }
-  function getPlantTargetRange(plant){
-    if(state?.growthModeActive && Number.isFinite(Number(plant?.waterPct))) return [40,60];
-    return targetWater[plant.type]?.[plant.stage || 'growing'] || [0,0];
-  }
+  function getPlantTargetRange(plant){ return targetWater[plant.type]?.[plant.stage || 'growing'] || [0,0]; }
   function plantRootRadius(plant){
     const base = rootRadiusByStage[plant.stage || 'growing'] || 170;
     const speciesAdjust = {lettuce:1.1,basil:0.95,spinach:1.0,tomato:1.15,cucumber:1.1,carrot:0.9,radish:0.88}[plant.type] || 1;
@@ -598,7 +595,6 @@
     if($('#moistureEnvEffect')) $('#moistureEnvEffect').textContent = `${getClimateProfile().label} / ${temp}℃ / 基準 ${base.toFixed(1)}`;
   }
   function waterAtPlant(plant){
-    if(state?.growthModeActive && Number.isFinite(Number(plant?.waterPct))) return Number(plant.waterPct);
     return waterAtArea(plant, plantRootRadius(plant));
   }
   function checkGoalMode(){
@@ -1104,7 +1100,7 @@
     }
     const value = total/Math.max(1,count);
     if($('#moistureValue')) $('#moistureValue').innerHTML = `ノズル周辺の平均水分 <span class="sensorBadge" style="background:${moistureColor(value)}">${moistureText(value)}</span> ${value.toFixed(1)}`;
-    if($('#moistureStatus')) $('#moistureStatus').textContent = state.growthModeActive ? '育成B：乾燥30%以下 / 適正40〜60% / 過多70%以上 / 最も近い1株' : '赤=不足 / 青=適正 / 黒=過多 / 最も近い1株';
+    if($('#moistureStatus')) $('#moistureStatus').textContent = '赤=不足 / 青=適正 / 黒=過多 / 最も近い1株';
     if($('#moisturePos')) $('#moisturePos').textContent = `X${Math.round(left)}〜${Math.round(left+viewW)} / Y${Math.round(top)}〜${Math.round(top+viewH)}`;
     const nearestPlant = state.plants.slice().sort((a,b)=>Math.hypot(a.x-state.pos.x,a.y-state.pos.y)-Math.hypot(b.x-state.pos.x,b.y-state.pos.y))[0];
     if($('#plantNeedLegend')){
@@ -2088,7 +2084,7 @@
       state.plants = growthSession.plants.map((p)=>{
         const type = p.species || p.type || 'lettuce';
         const stage = p.growth>=75 ? 'fruiting' : p.growth>=28 ? 'growing' : 'seedling';
-        return {id:p.id, type, x:p.x, y:p.y, stage, height:effectivePlantHeight(type, stage), health:p.health, water:p.water, waterPct:Number(p.waterPct ?? p.water ?? 50)};
+        return {id:p.id, type, x:p.x, y:p.y, stage, height:effectivePlantHeight(type, stage), health:p.health, water:p.water};
       });
       state.mission={title:'練習モードB / 育成中', detail:'通常のMove・周辺機器・シークエンスを使いながら、育成時間と植物状態を管理します。植物配置は育成開始時に固定されています。', done:false};
       updateMission();
