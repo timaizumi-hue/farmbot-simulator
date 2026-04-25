@@ -1238,7 +1238,7 @@
   function stopContinuousWater(){
     const waterEndTime = Date.now();
     const waterSeconds = state.waterStartTime ? Math.max(0, (waterEndTime - state.waterStartTime) / 1000) : 0;
-    const waterDetail = {x: state.pos.x, y: state.pos.y, z: state.pos.z, radius: state.waterRadius, rate: state.waterRate, seconds: waterSeconds, amount: Math.round(state.waterRate * Math.max(1, waterSeconds) * 10) / 10, skipGrowthEvent: true};
+    const waterDetail = {x: state.pos.x, y: state.pos.y, z: state.pos.z, radius: state.waterRadius, rate: state.waterRate, seconds: waterSeconds, amount: Math.round(state.waterRate * Math.max(1, waterSeconds) * 10) / 10};
     if(waterInterval){ clearInterval(waterInterval); waterInterval=null; }
     if(waterElapsedTimer){ clearInterval(waterElapsedTimer); waterElapsedTimer=null; }
     state.watering=false;
@@ -1247,7 +1247,6 @@
     if($('#waterPulseLabel')) $('#waterPulseLabel').textContent='散水開始から 0.0秒';
     if($('#waterSprayModeLabel')) $('#waterSprayModeLabel').textContent='WATER ONで現在位置から継続散水';
     window.dispatchEvent(new CustomEvent('farmbot:water-applied', {detail: waterDetail}));
-    try{ window.FarmBotGrowthMode?.applyWaterFromMain?.(waterDetail.x, waterDetail.y, Math.max(260, waterDetail.radius + 140), Math.max(2, waterDetail.amount)); }catch(e){ console.warn('growth water sync failed', e); }
     saveState('自動保存');
     renderAll();
   }
@@ -2076,33 +2075,47 @@
       if($('#appRoot')?.classList.contains('hidden')) initMode('free');
       return true;
     },
-    applyGrowthSession(growthSession){
+    applyGrowthSession(growthSession, options={}){
       if(!growthSession || !Array.isArray(growthSession.plants)) return;
       if($('#appRoot')?.classList.contains('hidden')) initMode('free');
+      const shouldReset = !!(options && options.reset);
+      if(shouldReset){
+        state.pathHistory=[]; state.recentPath=null; state.waterCells={}; state.waterHistory=[]; state.leafWater={};
+        state.watering=false; state.waterStartTime=null;
+        state.pos={x:0,y:0,z:0}; state.selected={x:0,y:0,z:0};
+      }
       state.growthModeActive = true;
       state.growthPlantLocked = true;
       state.growthSeasonLabel = growthSession.label || '育成';
-      if(growthSession.resetMainStateOnce){
-        state.pos = {x:0,y:0,z:0};
-        state.selected = {x:0,y:0,z:0};
-        state.watering = false;
-        state.waterStartTime = null;
-        state.waterCells = {};
-        state.waterHistory = [];
-        state.leafWater = {};
-        state.pathHistory = [];
-        state.recentPath = null;
-        state.sequence = Array.isArray(state.sequence) ? state.sequence : [];
-      }
       state.plants = growthSession.plants.map((p)=>{
         const type = p.species || p.type || 'lettuce';
-        const stage = p.stage || (p.growth>=75 ? 'fruiting' : p.growth>=28 ? 'growing' : 'seedling');
-        return {id:p.id, type, x:p.x, y:p.y, stage, height:effectivePlantHeight(type, stage), health:p.health, water:p.waterPct, waterPct:p.waterPct, fertility:p.fertility, growth:p.growth};
+        const stage = p.growth>=75 ? 'fruiting' : p.growth>=28 ? 'growing' : 'seedling';
+        return {id:p.id, type, x:p.x, y:p.y, stage, height:effectivePlantHeight(type, stage), health:p.health, waterPct:p.waterPct, water:p.waterPct};
       });
+      if(shouldReset){
+        const pctToUnit=(gp)=>{
+          const pct=Number(gp.waterPct ?? 50);
+          const unit=Array.isArray(gp.optimalUnit)?gp.optimalUnit:getPlantTargetRange({type:gp.type||gp.species,stage:gp.stage||'seedling'});
+          const mid=(unit[0]+unit[1])/2;
+          const slope=(unit[1]-unit[0])/20;
+          return clamp(mid+(pct-50)*slope,0,16);
+        };
+        for(const gp of growthSession.plants){
+          const unitVal=pctToUnit(gp);
+          const cx=gp.x/garden.w*garden.cols, cy=gp.y/garden.h*garden.rows;
+          const rad=Math.max(1.2, plantRootRadius({type:gp.type||gp.species,stage:gp.stage||'seedling'})/(garden.w/garden.cols));
+          for(let yy=Math.floor(cy-rad-1); yy<=Math.ceil(cy+rad+1); yy++){
+            for(let xx=Math.floor(cx-rad-1); xx<=Math.ceil(cx+rad+1); xx++){
+              if(xx<0||yy<0||xx>=garden.cols||yy>=garden.rows) continue;
+              if(Math.hypot(xx+0.5-cx, yy+0.5-cy)>rad) continue;
+              state.waterCells[`${xx},${yy}`]=Math.max(state.waterCells[`${xx},${yy}`]||0, unitVal);
+            }
+          }
+        }
+      }
       state.mission={title:'練習モードB / 育成中', detail:'通常のMove・周辺機器・シークエンスを使いながら、育成時間と植物状態を管理します。植物配置は育成開始時に固定されています。', done:false};
       updateMission();
       updateGrowthPlantLockUI();
-      applyStateToControls();
       renderPlants(); renderAll(); saveState('自動保存');
     },
     getPlantsSnapshot(){ return deepClone(state.plants || []); },
