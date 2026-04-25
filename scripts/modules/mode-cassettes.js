@@ -122,6 +122,26 @@
     overlay.classList.remove('hidden');
   }
 
+  function openGrowthEntry(){
+    if(window.FarmBotGrowthMode && window.FarmBotGrowthMode.hasSave && window.FarmBotGrowthMode.hasSave()){
+      const resume = window.confirm('前回の育成モードの続きがあります。\n前回の続きから開始しますか？\n\nOK：続きから開始\nキャンセル：新規で季節を選ぶ');
+      if(resume){
+        try{
+          if(window.FarmBotBasicLesson) window.FarmBotBasicLesson.stop();
+          window.FarmBotGrowthMode.openLoad();
+          window.setTimeout(applyCassetteHud, 80);
+          window.setTimeout(applyCassetteHud, 400);
+        }catch(e){
+          console.error(e);
+          alert('保存データの読込に失敗しました。新規開始を選んでください。');
+          openPack(growthB);
+        }
+        return;
+      }
+    }
+    openPack(growthB);
+  }
+
   function startCassette(pack, card){
     saveSelection(pack, card);
     closeOverlay();
@@ -218,13 +238,13 @@
     }
     if(card && card.dataset.mode === 'practice_goal'){
       ev.preventDefault(); ev.stopPropagation(); ev.stopImmediatePropagation();
-      openPack(growthB);
+      openGrowthEntry();
       return;
     }
     const dockBtn = ev.target.closest && ev.target.closest('[data-cassette-open]');
     if(dockBtn){
       ev.preventDefault();
-      openPack(dockBtn.dataset.cassetteOpen === 'B' ? growthB : trainingA);
+      (dockBtn.dataset.cassetteOpen === 'B' ? openGrowthEntry() : openPack(trainingA));
     }
   }, true);
 
@@ -237,5 +257,5 @@
     applyCassetteHud();
   });
 
-  window.FarmBotModeCassettes = {openTrainingA:()=>openPack(trainingA), openGrowthB:()=>openPack(growthB), applyCassetteHud};
+  window.FarmBotModeCassettes = {openTrainingA:()=>openPack(trainingA), openGrowthB:openGrowthEntry, applyCassetteHud};
 })();

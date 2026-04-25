@@ -1526,7 +1526,7 @@
     $('#runSeqBtn').onclick=()=>runSequence();
     $('#clearSeqBtn').onclick=()=>{ state.sequence=[]; renderSequence(); renderAll(); saveState('自動保存'); };
     $('#clearLogBtn').onclick=()=>{ state.logs=[]; renderLog(); saveState('自動保存'); };
-    $('#backHomeBtn').onclick=()=>{ stopMotion(); $('#appRoot').classList.add('hidden'); $('#homeScreen').classList.remove('hidden'); saveState('自動保存'); };
+    $('#backHomeBtn').onclick=()=>{ stopMotion(); try{ if(window.FarmBotGrowthMode && window.FarmBotGrowthMode.close) window.FarmBotGrowthMode.close(); }catch(e){ console.warn('growth close on home failed', e); } $('#appRoot').classList.add('hidden'); $('#homeScreen').classList.remove('hidden'); saveState('自動保存'); };
     if($('#densityBtn')) $('#densityBtn').onclick=cycleUiDensity;
     $$('.quickJump').forEach(btn=>btn.onclick=()=>{
       const target = btn.dataset.target;

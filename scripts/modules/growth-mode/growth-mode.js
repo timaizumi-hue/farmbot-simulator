@@ -233,7 +233,7 @@
   function stopMusic(){if(!audio)return;audio.running=false;if(audio.timeout)clearTimeout(audio.timeout);try{audio.ctx.close();}catch{}audio=null;$('#gMusic')?.classList.remove('active');}
   function toggleMusic(){if(audio?.running)stopMusic();else startMusic();}
   function open(kind, options={}){injectStyles();showClock=localStorage.getItem('farmbot_growth_clock_v1')==='1';if(kind==='load'){if(!load())makeSession('spring_growth',options);}else makeSession(kind||'spring_growth',options);applyToMain();ensureHud();ensurePanel().classList.add('g-hidden');ensureAutoSave();render();}
-  function close(){pause();stopMusic();document.body.classList.remove('growth-plant-locked','growth-tool-fertilizer','growth-tool-pesticide','growth-tool-weed');window.FarmBotAppBridge?.setPlantLock?.(false);$('#growthHudV2515')?.remove();$('#growthPanelV2515')?.remove();$('#growthClockV2517')?.remove();}
+  function close(){try{autoSave();}catch{} pause();stopMusic();document.body.classList.remove('growth-plant-locked','growth-tool-fertilizer','growth-tool-pesticide','growth-tool-weed');window.FarmBotAppBridge?.setPlantLock?.(false);$('#growthHudV2515')?.remove();$('#growthPanelV2515')?.remove();$('#growthClockV2517')?.remove();}
 
   window.addEventListener('farmbot:water-started',()=>{if(session)play(1);});
   window.addEventListener('farmbot:move-started',()=>{if(session&&!session.running)play(1);});
