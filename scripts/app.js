@@ -1007,7 +1007,7 @@
     (state.plants||[]).forEach((p, idx)=>{
       if(p.x<left-20||p.x>left+viewW+20||p.y<top-20||p.y>top+viewH+20) return;
       const q=toLocal(p.x,p.y);
-      drawTopPlant(ctx, q.x, q.y, p, plantScale);
+      drawObservationPlant(ctx, q.x, q.y, p, plantScale, idx===nearestIdx?1:0);
       const wet = plantLeafWetness(p, idx);
       if(wet>0.06){
         ctx.fillStyle=`rgba(212,226,239,${Math.min(0.26,wet*0.24)})`;
@@ -1169,7 +1169,7 @@
     if($('#mapCoordChip')) $('#mapCoordChip').textContent = `選択 X${Math.round(state.selected.x)} / Y${Math.round(state.selected.y)} / Z${Math.round(state.selected.z)}`;
     if($('#jogStepLabel')) $('#jogStepLabel').textContent=`現在のステップ: ${state.jogStep||100}mm`;
     if($('#cameraZoomLabel') && $('#cameraZoom')) $('#cameraZoomLabel').textContent=`${(+$('#cameraZoom').value).toFixed(1)}x`;
-    if($('#toolCamToggleBtn')) $('#toolCamToggleBtn').textContent=`手元カメラ: ${state.showToolCam===false?'OFF':'ON'}`;
+    if($('#toolCamToggleBtn')) $('#toolCamToggleBtn').textContent=`観察ビュー: ${state.showToolCam===false?'OFF':'ON'}`;
     if($('#waterPulseLabel')) $('#waterPulseLabel').textContent = state.watering && state.waterStartTime ? `散水開始から ${((Date.now()-state.waterStartTime)/1000).toFixed(1)}秒` : '散水開始から 0.0秒';
     if($('#waterSprayModeLabel')) $('#waterSprayModeLabel').textContent = state.watering ? '現在位置から継続散水中' : 'WATER ONで現在位置から継続散水';
     $$('.jogStepBtn').forEach(btn=>btn.classList.toggle('primary', +btn.dataset.step===(state.jogStep||100))); 
@@ -1895,7 +1895,7 @@
     const climate = getClimateProfile();
     const drySense = temp>=28 ? '乾きやすい' : temp<=14 ? '乾きにくい' : '標準';
     cameraPanelSet('#cameraEnvInfo', `${climate.label} / ${drySense}`);
-    cameraPanelSet('#cameraEnvNote', `季節や時間帯を変えた時に、乾き方や葉の濡れ方の違いを見るための表示です。操作中は必要水分・現在水分・植物の状態を中心に見てください。`);
+    cameraPanelSet('#cameraEnvNote', `観察ビューは植物の茂り方・葉の濡れ方・根元の水分判断を見るための表示です。動作ビューはFarmBot全体の動き、観察ビューは作業点の植物状態確認に使います。`);
   };
 
   state.stageZoom = 1.1;
@@ -2030,6 +2030,70 @@
     }
     ctx.restore();
   };
+  /* ===== v25.23 observation-view: vector/anime plants for tool camera ===== */
+  function observationStatusProfile(plant){
+    const rs = getPlantWaterState(plant);
+    const v = rs && isFinite(rs.value) ? rs.value : 50;
+    const target = rs && rs.target ? rs.target : [40,60];
+    const dry = clamp((target[0] - v) / 24, 0, 1);
+    const wet = clamp((v - target[1]) / 28, 0, 1);
+    const ok = 1 - Math.max(dry, wet);
+    return {dry, wet, ok, text: rs ? rs.text : '--'};
+  }
+  function observationSpeciesProfile(plant){
+    const base = speciesPlantProfile(plant);
+    const type = plant.type || 'lettuce';
+    const status = observationStatusProfile(plant);
+    const stressShrink = 1 - status.dry*0.23 - status.wet*0.12;
+    const droop = status.dry*0.95 + status.wet*0.38;
+    const hue = plantColors[type] || '#5fa954';
+    return {...base, tone: status.dry>0.18 ? adjustHex(hue, 30) : status.wet>0.18 ? adjustHex(hue, -28) : hue, shrink: clamp(stressShrink, .66, 1.06), droop, status};
+  }
+  function drawObservationPlant(ctx,x,y,plant,scale=1, focus=0){
+    const density = leafDensityScore(plant);
+    const wetLevel = plantLeafWetness(plant, (state.plants||[]).indexOf(plant));
+    const stage = plant.stage || 'growing';
+    const profile = observationSpeciesProfile(plant);
+    const pulse = (Date.now()%2400)/2400;
+    const breath = 1 + Math.sin(pulse*Math.PI*2 + (plant.x+plant.y)*0.002)*0.018;
+    const baseSpread = (stage==='seedling' ? 15 : stage==='growing' ? 25 : 33) * profile.shrink * breath;
+    const spread = baseSpread * profile.spreadMul;
+    const rings = profile.rings;
+    const leafCount = Math.max(4, Math.round(profile.leafCount * (0.86 + density*0.09) * (1-profile.status.dry*0.18)));
+    ctx.save(); ctx.translate(x,y);
+    const halo = ctx.createRadialGradient(0, 10*scale, 3, 0, 10*scale, spread*1.35*scale);
+    halo.addColorStop(0, profile.status.ok>0.72 ? 'rgba(70,105,44,.16)' : profile.status.dry>profile.status.wet ? 'rgba(150,125,55,.13)' : 'rgba(40,60,45,.16)');
+    halo.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle=halo; ctx.beginPath(); ctx.ellipse(0,10*scale,spread*1.22*scale,Math.max(7,spread*.32)*scale,0,0,Math.PI*2); ctx.fill();
+    const items=[];
+    for(let layer=0; layer<rings; layer++){
+      const localCount=Math.max(4, Math.round(leafCount - layer*(profile.habit==='upright'?1.2:1.7)));
+      const ringSpread=spread*(profile.habit==='rosette'?(0.13+layer*.145):(0.10+layer*.13));
+      for(let i=0;i<localCount;i++){
+        const seed=plant.x*.017+plant.y*.023+layer*13+i*5.17+density*6;
+        const angle=(Math.PI*2/localCount)*i + seededPlantRand(seed)*.5 + layer*.18;
+        const front=Math.max(-1, Math.min(1, Math.sin(angle)));
+        const anim=Math.sin(pulse*Math.PI*2 + seed)*0.035;
+        const len=((stage==='seedling'?10.8:15.2)+layer*2.8+seededPlantRand(seed+4)*4.2+density*1.8)*profile.lenMul*profile.shrink*(1+anim);
+        const wid=((stage==='seedling'?4.8:6.2)+layer*.72+seededPlantRand(seed+8)*1.7)*profile.widMul*profile.shrink;
+        const radial=ringSpread*(0.84+seededPlantRand(seed+3)*.22);
+        const lx=Math.cos(angle)*radial*scale;
+        const ly=(Math.sin(angle)*radial*profile.yScale + profile.droop*(4.5+layer*1.4) + seededPlantRand(seed+1)*2.5)*scale;
+        const rot=angle + Math.PI/2 + (seededPlantRand(seed+7)-.5)*(.34+profile.tiltMul*.32) + profile.droop*.20*front;
+        items.push({depth:front+layer*.25, draw:()=>{ ctx.save(); ctx.translate(lx,ly-layer*1.25*scale); ctx.rotate(rot); drawDetailedLeaf(ctx, seed, len, wid, profile.tone, wetLevel, scale); ctx.restore(); }});
+      }
+    }
+    items.sort((a,b)=>a.depth-b.depth).forEach(it=>it.draw());
+    ctx.fillStyle=profile.status.dry>0.18?'rgba(126,93,48,.88)':profile.status.wet>0.18?'rgba(61,72,43,.9)':'rgba(83,118,50,.92)';
+    ctx.beginPath(); ctx.arc(0,0,(5.4+focus*1.1)*scale,0,Math.PI*2); ctx.fill();
+    if(profile.fruitCount>0 && stage==='fruiting'){
+      const fruitCol=plant.type==='tomato'?'#c9473c':plant.type==='cucumber'?'#3d944d':'#91bd52';
+      for(let i=0;i<profile.fruitCount;i++){ const a=(Math.PI*2/profile.fruitCount)*i+.35; ctx.fillStyle=fruitCol; ctx.beginPath(); ctx.arc(Math.cos(a)*spread*.29*scale, Math.sin(a)*spread*.18*scale, (3.3+focus*.4)*scale, 0, Math.PI*2); ctx.fill(); }
+    }
+    if(focus>0){ ctx.strokeStyle='rgba(255,255,255,.34)'; ctx.lineWidth=1.2; ctx.beginPath(); ctx.ellipse(0,0,spread*.72*scale,spread*.38*scale,0,0,Math.PI*2); ctx.stroke(); }
+    ctx.restore();
+  }
+
 
 
 
