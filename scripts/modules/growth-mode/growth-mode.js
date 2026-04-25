@@ -1,9 +1,9 @@
 (() => {
   'use strict';
 
-  const VERSION='25.18';
-  const SAVE_KEY='farmbot_growth_session_v25_18';
-  const OLD_KEYS=['farmbot_growth_session_v25_17','farmbot_growth_session_v25_16','farmbot_growth_session_v25_15','farmbot_growth_session_v25_14','farmbot_growth_session_v25_13','farmbot_growth_session_v25_12'];
+  const VERSION='25.20';
+  const SAVE_KEY='farmbot_growth_session_v25_20';
+  const OLD_KEYS=['farmbot_growth_session_v25_19','farmbot_growth_session_v25_18','farmbot_growth_session_v25_17','farmbot_growth_session_v25_16','farmbot_growth_session_v25_15','farmbot_growth_session_v25_14','farmbot_growth_session_v25_13','farmbot_growth_session_v25_12'];
   const TOTAL_DAYS=90;
   const SEASON_REAL_MS=60*60*1000;
   const DAY_MS=SEASON_REAL_MS/TOTAL_DAYS;
@@ -38,17 +38,34 @@
 
   function cropName(type){return LABELS[type]||'植物';}
   function unitRange(type,stage){return (TARGET_UNITS[type]&&TARGET_UNITS[type][stage||'growing'])||[4,8];}
+  function moistureRange(){
+    const d=session?.difficulty||'normal';
+    if(d==='beginner')return [35,65];
+    if(d==='advanced')return [45,55];
+    return [40,60];
+  }
   function pctRange(type,stage){
-    const r=unitRange(type,stage);
-    const d=DIFFICULTY[session?.difficulty||'normal']||DIFFICULTY.normal;
-    return [clamp(pctFromUnit(r[0])-Math.max(0,d.rangePad),0,100),clamp(pctFromUnit(r[1])+Math.max(0,d.rangePad),0,100)];
+    return moistureRange();
+  }
+  function moistureGuideText(){
+    const r=moistureRange();
+    return `推奨水分 ${r[0]}〜${r[1]}% / 乾燥30%以下 / 過多70%以上`;
   }
   function rnd(day,salt=0){const seed=session?.seed||1;const x=Math.sin(seed*.013+day*12.9898+salt*78.233)*43758.5453;return x-Math.floor(x);}
   function dateText(day){if(!session)return'-';const md=[31,28,31,30,31,30,31,31,30,31,30,31];let m=session.startMonth;let d=Math.floor(day)+1;while(d>md[(m-1)%12]){d-=md[(m-1)%12];m=(m%12)+1;}const w=['月','火','水','木','金','土','日'][Math.floor(day)%7];return `${m}/${pad(d)}（${w}）`;}
   function stageText(){const d=Math.floor(session?.day||0);if(d<14)return'苗';if(d<42)return'成長期';if(d<68)return'充実期';return'収穫期';}
   function weatherAt(day){const b=session?.base||SEASONS.spring_growth.base;const rainish=rnd(day,3)<b.rain;const temp=Math.round(b.temp+(rnd(day,1)-.5)*5+Math.sin(day/8)*2);const humidity=Math.round(clamp(b.humidity+(rainish?10:0)+(rnd(day,2)-.5)*12,35,86));const rain=rainish?Math.round(2+rnd(day,4)*6):0;const label=rain?'小雨':(temp>=30?'晴れ・高温':temp<=8?'曇り・低温':'晴れ');return{label,temp,humidity,rain};}
   function stageFromGrowth(g){g=Number(g||0);if(g<25)return 'seedling';if(g<72)return 'growing';return 'fruiting';}
-  function waterStatus(p){const[lo,hi]=p.optimalPct||pctRange(p.type,p.stage);if(!p.alive)return['枯れ','bad'];if(p.waterPct<lo-12)return['乾燥','bad'];if(p.waterPct<lo)return['やや乾燥','warn'];if(p.waterPct>hi+12)return['過湿','bad'];if(p.waterPct>hi)return['やや過湿','warn'];return['適正','good'];}
+  function waterStatus(p){
+    const [lo,hi]=moistureRange();
+    const w=Number(p.waterPct||0);
+    if(!p.alive)return['枯れ','bad'];
+    if(w<=30)return['乾燥','bad'];
+    if(w<lo)return['やや乾燥','warn'];
+    if(w<=hi)return['適正','good'];
+    if(w<70)return['やや過多','warn'];
+    return['過多','bad'];
+  }
   function log(t){if(!session)return;session.notes.unshift(`${dateText(session.day)} ${t}`);session.notes=session.notes.slice(0,80);}
   function autoSave(){if(!session)return;session.lastSaved=new Date().toISOString();localStorage.setItem(SAVE_KEY,JSON.stringify(session));}
   function ensureAutoSave(){if(autosaveTimer)return;autosaveTimer=setInterval(autoSave,AUTO_SAVE_MS);}
@@ -60,6 +77,7 @@
       #growthHudV2515{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:9800;width:min(1040px,calc(100vw - 22px));background:rgba(255,250,240,.96);border:2px solid #9bb68c;border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,.18);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;color:#263027;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:6px 8px;box-sizing:border-box;pointer-events:none}.g-main{display:flex;align-items:center;gap:7px;flex-wrap:wrap;min-width:0}.g-badge{background:#25452a;color:#fff;border-radius:999px;padding:3px 8px;font-size:12px;white-space:nowrap}.g-strong{font-weight:800;font-size:15px;white-space:nowrap}.g-chip{background:#eef5e8;border:1px solid #d3e1c8;border-radius:999px;padding:3px 7px;font-size:12px;white-space:nowrap}.g-actions{display:flex;gap:5px;align-items:center;flex-wrap:nowrap;justify-content:flex-end;pointer-events:auto}.g-actions button,#growthPanelV2515 button{border:1px solid #c8d2bd;background:#fff;border-radius:9px;min-height:29px;padding:3px 8px;font-weight:700;cursor:pointer;white-space:nowrap}.g-actions button.active,#growthPanelV2515 button.active{background:#2f6b36!important;color:#fff!important;border-color:#2f6b36!important}.g-actions button.tool-active,#gToolBtn.tool-active{background:#7a5b25!important;color:#fff!important;border-color:#7a5b25!important}.g-hidden{display:none!important}.g-save-indicator{font-size:11px;color:#60705f}.g-plant-strip{display:none!important}
       #gToolMenu{position:absolute;right:270px;top:42px;z-index:9810;display:none;grid-template-columns:1fr;gap:5px;background:#fffaf0;border:1px solid #d7ceb9;border-radius:12px;box-shadow:0 12px 28px rgba(0,0,0,.22);padding:8px;pointer-events:auto}#gToolMenu.open{display:grid}#gToolMenu button{min-width:112px;text-align:left}.g-size-compact #growthHudV2515{width:min(900px,calc(100vw - 22px));font-size:12px}.g-size-wide #growthHudV2515{width:min(1220px,calc(100vw - 22px))}
       #growthPanelV2515{position:fixed;left:36px;top:78px;width:min(1180px,calc(100vw - 72px));height:min(650px,calc(100vh - 100px));z-index:9790;background:#f7f4ec;border:2px solid #d7ceb9;border-radius:16px;box-shadow:0 22px 60px rgba(0,0,0,.30);display:grid;grid-template-rows:auto 1fr;overflow:hidden;color:#263027;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;resize:both;min-width:720px;min-height:430px;max-width:calc(100vw - 24px);max-height:calc(100vh - 70px)}.gp-head{display:flex;justify-content:space-between;gap:12px;align-items:center;background:#fffaf0;border-bottom:1px solid #ddd2bf;padding:9px 12px;cursor:move}.gp-head h2{margin:0;font-size:19px}.gp-head p{margin:2px 0 0;color:#60705f;font-size:12px}.gp-body{display:grid;grid-template-columns:230px 1fr 280px;gap:9px;padding:9px;min-height:0}.gp-card{background:#fff;border:1px solid #dfd7c9;border-radius:12px;padding:9px;overflow:auto;min-height:0}.gp-card h3{margin:2px 0 9px;font-size:14px}.gp-stat{display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #e4ddd1;padding:6px 0}.gp-stat span{color:#667064}.gp-stat strong{text-align:right}.forecast{display:grid;gap:5px}.forecast div{display:grid;grid-template-columns:42px 50px 1fr;gap:5px;align-items:center;border:1px solid #eee6d8;background:#fbfaf5;border-radius:9px;padding:5px;font-size:12px}.plant-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:7px}.plant-card{border:1px solid #e4ddd1;border-radius:12px;background:#fbfaf5;padding:8px}.plant-head{display:flex;justify-content:space-between;gap:8px}.plant-head strong{font-size:14px}.plant-head span{font-size:12px;border-radius:999px;padding:3px 8px}.good{background:#dff3df;color:#276b32}.warn{background:#fff0bd;color:#745600}.bad{background:#ffd7d0;color:#8b2c20}.bars{display:grid;gap:5px;margin-top:7px}.bars label{display:grid;grid-template-columns:40px 1fr 40px;gap:7px;align-items:center;font-size:12px}.bars meter{width:100%;height:11px}.mini-map{background:#e6dbc4;border:1px solid #a99475;border-radius:10px;overflow:hidden;margin-bottom:8px}.mini-map svg{display:block;width:100%;height:135px}.mini-map rect{fill:#e3d2b6;stroke:#9b8c70}.mini-map circle{fill:#5d9d51;stroke:#2e5e29;stroke-width:2}.mini-map text{font-size:12px;fill:#2f3e31}.lock-note{font-size:12px;background:#f1eadc;border:1px solid #e1d7c5;border-radius:9px;padding:7px;margin:8px 0}.g-log{display:grid;gap:6px;margin-top:10px}.g-log div{border:1px solid #eee6d8;border-radius:9px;background:#fbfaf5;padding:7px;font-size:12px}.muted{color:#647164;font-size:12px}.tool-help{font-size:12px;background:#fff8df;border:1px solid #eadca8;border-radius:9px;padding:7px;margin-top:6px}.gp-footer-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+      #growthClockV2517{width:174px;padding:10px}.clock-face{position:relative;width:104px;height:104px;margin:0 auto 7px;border:4px solid #25452a;border-radius:50%;background:radial-gradient(circle at 50% 50%,#fff 0 58%,#f1eadc 59% 100%)}.clock-face::after{content:'12\\A 3\\A 6\\A 9';white-space:pre;position:absolute;inset:7px;color:#263027;font-size:10px;font-weight:800;line-height:45px;text-align:center;pointer-events:none}.clock-face::before{content:'';position:absolute;left:50%;top:50%;width:9px;height:9px;background:#25452a;border-radius:50%;transform:translate(-50%,-50%);z-index:4}.clock-hand{position:absolute;left:50%;top:50%;transform-origin:50% 100%;border-radius:999px;background:#25452a}.clock-hour{width:5px;height:27px;margin-left:-2.5px;margin-top:-27px;transform:rotate(var(--hour-deg,0deg));z-index:2}.clock-min{width:3px;height:39px;margin-left:-1.5px;margin-top:-39px;background:#5d7f39;transform:rotate(var(--min-deg,0deg));z-index:3}.clock-label{font-size:16px;font-weight:900}.clock-sub{font-size:11px;color:#687164}.clock-progress{height:8px;background:#e0d7c8;border-radius:999px;overflow:hidden;margin-top:7px}.clock-progress i{display:block;height:100%;background:#5d9d51;width:0%}
       body.growth-plant-locked #panel-plants::before{content:'育成モード中：植物配置は固定されています。追加・削除・全消去・練習配置の変更はできません。';display:block;margin:0 0 8px;padding:8px 10px;border:1px solid #d9c79b;border-radius:10px;background:#fff4cc;color:#6f4e00;font-weight:700;font-size:12px}body.growth-plant-locked #plantMode,body.growth-plant-locked #clearPlantsBtn,body.growth-plant-locked #seedPracticeBtn{opacity:.45;pointer-events:none}
       body.growth-tool-fertilizer #mapCanvas{cursor:copy}body.growth-tool-pesticide #mapCanvas{cursor:crosshair}body.growth-tool-weed #mapCanvas{cursor:cell}
 
@@ -132,7 +150,7 @@
     $('#gSeason',h).textContent=session.label;$('#gDate',h).textContent=dateText(session.day);$('#gDay',h).textContent=`${Math.floor(session.day)+1}/${TOTAL_DAYS}日`;$('#gStage',h).textContent=stageText();$('#gSpeed',h).textContent=session.running?`速度 x${session.speed}`:'停止中';$('#gWeather',h).textContent=`${w.label} ${w.temp}℃ 湿度${w.humidity}%`;$('#gDiff',h).textContent=`${session.difficultyLabel||'中級'}・${AMOUNT_LABEL[session.plantAmount]||'中程度'}`;$('#gTool',h).textContent=`ツール: ${TOOL_LABEL[session.activeTool]||'なし'}`;$('#gSaveState',h).textContent=`自動保存 ${session.lastSaved?new Date(session.lastSaved).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}):'待機'}`;
     $('#gpStats',p).innerHTML=`<div class="gp-stat"><span>季節</span><strong>${session.label}</strong></div><div class="gp-stat"><span>日付</span><strong>${dateText(session.day)}</strong></div><div class="gp-stat"><span>経過</span><strong>${Math.floor(session.day)+1}/${TOTAL_DAYS}日</strong></div><div class="gp-stat"><span>段階</span><strong>${stageText()}</strong></div><div class="gp-stat"><span>難易度</span><strong>${session.difficultyLabel||'中級'}</strong></div><div class="gp-stat"><span>株数</span><strong>${AMOUNT_LABEL[session.plantAmount]||'中程度'} / ${session.plants.length}株</strong></div><div class="gp-stat"><span>速度</span><strong>${session.running?'x'+session.speed:'停止'}</strong></div><div class="gp-stat"><span>天気</span><strong>${w.label} / ${w.temp}℃ / 湿度${w.humidity}%</strong></div><div class="gp-stat"><span>虫</span><strong>${session.plants.filter(x=>x.bugs).length}株</strong></div><div class="gp-stat"><span>雑草</span><strong>${session.weeds.length}本</strong></div>`;
     $('#gpForecast',p).innerHTML=forecastHtml();$('#gpMini',p).innerHTML=miniMapHtml();$('#gpToolName',p).textContent=TOOL_LABEL[session.activeTool]||'なし';
-    $('#gpPlants',p).innerHTML=session.plants.map(pl=>{const[st,cls]=waterStatus(pl);return`<div class="plant-card"><div class="plant-head"><strong>${pl.name}${pl.bugs?' 🐛':''}</strong><span class="${cls}">${st}</span></div><div class="bars"><label>成長 <meter min="0" max="100" value="${pl.growth}"></meter><em>${Math.round(pl.growth)}%</em></label><label>健康 <meter min="0" max="100" value="${pl.health}"></meter><em>${Math.round(pl.health)}%</em></label><label>水分 <meter min="0" max="100" value="${pl.waterPct}"></meter><em>${Math.round(pl.waterPct)}%</em></label><label>肥料 <meter min="0" max="100" value="${pl.fertility}"></meter><em>${Math.round(pl.fertility)}%</em></label></div><div class="gp-footer-actions"><span class="muted">練習目安 ${pl.optimalUnit[0]}〜${pl.optimalUnit[1]} = HUD ${pl.optimalPct[0]}〜${pl.optimalPct[1]}%</span></div></div>`;}).join('');
+    $('#gpPlants',p).innerHTML=session.plants.map(pl=>{const[st,cls]=waterStatus(pl);return`<div class="plant-card"><div class="plant-head"><strong>${pl.name}${pl.bugs?' 🐛':''}</strong><span class="${cls}">${st}</span></div><div class="bars"><label>成長 <meter min="0" max="100" value="${pl.growth}"></meter><em>${Math.round(pl.growth)}%</em></label><label>健康 <meter min="0" max="100" value="${pl.health}"></meter><em>${Math.round(pl.health)}%</em></label><label>水分 <meter min="0" max="100" value="${pl.waterPct}"></meter><em>${Math.round(pl.waterPct)}%</em></label><label>肥料 <meter min="0" max="100" value="${pl.fertility}"></meter><em>${Math.round(pl.fertility)}%</em></label></div><div class="gp-footer-actions"><span class="muted">${moistureGuideText()}</span></div></div>`;}).join('');
     $('#gpLog',p).innerHTML=(session.notes||[]).slice(0,22).map(n=>`<div>${n}</div>`).join('')||'<div>ログはまだありません。</div>';
     document.body.classList.add('growth-plant-locked');updateButtons();updateCursorClass();renderClock();
   }
@@ -148,14 +166,27 @@
   function ensureClock(){
     let c=$('#growthClockV2517');if(c)return c;
     c=document.createElement('div');c.id='growthClockV2517';c.className='g-clock g-hidden';
-    c.innerHTML='<div class="clock-face"><span class="clock-hand clock-hour"></span><span class="clock-hand clock-min"></span></div><div class="clock-label" id="clockDate">--</div><div class="clock-sub">3か月=約1時間</div>';
+    c.innerHTML='<div class="clock-face"><span class="clock-hand clock-hour"></span><span class="clock-hand clock-min"></span></div><div class="clock-label" id="clockTime">00:00</div><div class="clock-sub" id="clockDate">--</div><div class="clock-sub" id="clockSpeed">停止 / 3か月=約1時間</div><div class="clock-progress"><i id="clockProgress"></i></div>';
     document.body.appendChild(c);return c;
   }
+  function simTime(){
+    const frac=((session.day%1)+1)%1;
+    const total=Math.floor(frac*24*60);
+    const hh=Math.floor(total/60)%24;
+    const mm=total%60;
+    return {frac,hh,mm,text:`${pad(hh)}:${pad(mm)}`};
+  }
   function renderClock(){
-    const c=ensureClock();c.classList.toggle('g-hidden',!showClock||!session);if(!showClock||!session)return;
-    const frac=((session.day%1)+1)%1;const hourDeg=(frac*24%12)*30;const minDeg=(frac*24%1)*360;
-    c.style.setProperty('--hour-deg',hourDeg+'deg');c.style.setProperty('--min-deg',minDeg+'deg');$('#clockDate',c).textContent=dateText(session.day);
-    $('#gClock')?.classList.toggle('active',showClock);
+    const c=ensureClock();c.classList.toggle('g-hidden',!showClock||!session);$('#gClock')?.classList.toggle('active',showClock);if(!showClock||!session)return;
+    const t=simTime();
+    const hourDeg=((t.hh%12)+t.mm/60)*30;
+    const minDeg=t.mm*6;
+    c.style.setProperty('--hour-deg',hourDeg+'deg');
+    c.style.setProperty('--min-deg',minDeg+'deg');
+    $('#clockTime',c).textContent=t.text;
+    $('#clockDate',c).textContent=dateText(session.day);
+    $('#clockSpeed',c).textContent=session.running?`速度 x${session.speed} で進行中`:'停止中';
+    const pr=$('#clockProgress',c); if(pr)pr.style.width=Math.round(t.frac*100)+'%';
   }
   function toggleClock(){showClock=!showClock;localStorage.setItem('farmbot_growth_clock_v1',showClock?'1':'0');render();}
   function cycleHudSize(){
@@ -175,7 +206,7 @@
     const diff=DIFFICULTY[session.difficulty||'normal']||DIFFICULTY.normal;if(rnd(d,30)<0.10*diff.eventMul&&session.plants.length){const p=session.plants[Math.floor(rnd(d,31)*session.plants.length)];if(p&&!p.bugs){p.bugs=true;log(`${p.name}に虫がつきました。殺虫剤で対処できます。`);}}
     if(rnd(d,40)<0.08*diff.eventMul&&session.weeds.length<6){session.weeds.push({id:'weed_'+d+'_'+Math.floor(rnd(d,42)*999),x:180+rnd(d,41)*1140,y:170+rnd(d,43)*420});log('畑に雑草が出ました。雑草駆除ツールで取り除けます。');}
     const weedPenalty=session.weeds.length*.045;
-    session.plants.forEach(p=>{if(!p.alive)return;const evap=session.base.evap*(w.temp/22)*(1-w.humidity/190);p.waterPct=clamp(p.waterPct+w.rain*.45-evap*4.1,0,100);p.fertility=clamp(p.fertility-.42,0,100);const[lo,hi]=p.optimalPct;let hd=.34;if(p.waterPct<lo)hd-=(lo-p.waterPct)*.052;if(p.waterPct>hi)hd-=(p.waterPct-hi)*.058;if(p.fertility<28)hd-=.22;if(p.fertility>92)hd-=.08;if(p.bugs)hd-=.72;hd-=weedPenalty;if(w.temp>33)hd-=.24;if(w.temp<3)hd-=.18;p.health=clamp(p.health+hd,0,100);const[st]=waterStatus(p);const waterMul=st==='適正'?1:st.includes('やや')?.58:.18;const fertMul=p.fertility>=35&&p.fertility<=90?1:p.fertility<20?.35:.65;p.growth=clamp(p.growth+waterMul*fertMul*(p.health/100)*1.15*diff.growthMul,0,100);const nextStage=stageFromGrowth(p.growth);if(nextStage!==p.stage){p.stage=nextStage;p.optimalUnit=unitRange(p.type,p.stage);p.optimalPct=pctRange(p.type,p.stage);log(`${p.name}が${p.stage==='seedling'?'苗':p.stage==='growing'?'成長期':'収穫期'}になりました。`);}p.yieldScore=Math.round(p.growth*.55+p.health*.30+p.fertility*.15);if(p.health<=0){p.alive=false;log(`${p.name}が枯れました。`);}});
+    session.plants.forEach(p=>{if(!p.alive)return;const evap=session.base.evap*(w.temp/22)*(1-w.humidity/190);p.waterPct=clamp(p.waterPct+w.rain*.45-evap*4.1,0,100);p.fertility=clamp(p.fertility-.42,0,100);const[lo,hi]=moistureRange();let hd=.34;if(p.waterPct<lo)hd-=(lo-p.waterPct)*.052;if(p.waterPct>hi)hd-=(p.waterPct-hi)*.058;if(p.fertility<28)hd-=.22;if(p.fertility>92)hd-=.08;if(p.bugs)hd-=.72;hd-=weedPenalty;if(w.temp>33)hd-=.24;if(w.temp<3)hd-=.18;p.health=clamp(p.health+hd,0,100);const[st]=waterStatus(p);const waterMul=st==='適正'?1:st.includes('やや')?.58:.18;const fertMul=p.fertility>=35&&p.fertility<=90?1:p.fertility<20?.35:.65;p.growth=clamp(p.growth+waterMul*fertMul*(p.health/100)*1.15*diff.growthMul,0,100);const nextStage=stageFromGrowth(p.growth);if(nextStage!==p.stage){p.stage=nextStage;p.optimalUnit=unitRange(p.type,p.stage);p.optimalPct=pctRange(p.type,p.stage);log(`${p.name}が${p.stage==='seedling'?'苗':p.stage==='growing'?'成長期':'収穫期'}になりました。`);}p.yieldScore=Math.round(p.growth*.55+p.health*.30+p.fertility*.15);if(p.health<=0){p.alive=false;log(`${p.name}が枯れました。`);}});
     applyToMain();autoSave();
   }
   function stepDay(){if(!session)return;session.day=clamp(Math.floor(session.day)+1,0,TOTAL_DAYS);advanceDay();render();}
