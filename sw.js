@@ -1,4 +1,4 @@
-const CACHE_NAME = 'farmbot-v25-18-growth-hud-visible-stage';
+const CACHE_NAME = 'farmbot-v25-19-growth-time-water-tune';
 const ASSETS = [
   "./",
   "./index.html",
