@@ -1,9 +1,9 @@
 (() => {
   'use strict';
 
-  const VERSION='25.23';
-  const SAVE_KEY='farmbot_growth_session_v25_23';
-  const OLD_KEYS=['farmbot_growth_session_v25_22','farmbot_growth_session_v25_21','farmbot_growth_session_v25_20','farmbot_growth_session_v25_19','farmbot_growth_session_v25_18','farmbot_growth_session_v25_17','farmbot_growth_session_v25_16','farmbot_growth_session_v25_15','farmbot_growth_session_v25_14','farmbot_growth_session_v25_13','farmbot_growth_session_v25_12'];
+  const VERSION='25.24';
+  const SAVE_KEY='farmbot_growth_session_v25_24';
+  const OLD_KEYS=['farmbot_growth_session_v25_23','farmbot_growth_session_v25_22','farmbot_growth_session_v25_21','farmbot_growth_session_v25_20','farmbot_growth_session_v25_19','farmbot_growth_session_v25_18','farmbot_growth_session_v25_17','farmbot_growth_session_v25_16','farmbot_growth_session_v25_15','farmbot_growth_session_v25_14','farmbot_growth_session_v25_13','farmbot_growth_session_v25_12'];
   const TOTAL_DAYS=90;
   const SEASON_REAL_MS=60*60*1000;
   const DAY_MS=SEASON_REAL_MS/TOTAL_DAYS;
@@ -123,7 +123,7 @@
     };
     const counts={small:6,medium:9,large:12};
     const arr=(fallback[kind]||fallback.spring_growth).slice(0,counts[amount]||9);
-    return arr.map((a,i)=>({id:'gplant_'+i,type:a[0],name:cropName(a[0])+(i+1),x:a[1],y:a[2],stage:a[3],waterPct:54+((i*7)%18),growth:a[3]==='seedling'?14:32,health:86,fertility:58+((i*9)%20),bugs:false,alive:true,yieldScore:0}));
+    return arr.map((a,i)=>({id:'gplant_'+i,type:a[0],name:cropName(a[0])+(i+1),x:a[1],y:a[2],stage:a[3],waterPct:28+((i*5)%12),growth:a[3]==='seedling'?14:32,health:86,fertility:58+((i*9)%20),bugs:false,alive:true,yieldScore:0}));
   }
 
   function normalizePlant(p,i){
@@ -138,7 +138,7 @@
     const meta=SEASONS[kind]||SEASONS.spring_growth;const seed=Date.now()%1000000;const difficulty=options.difficulty||'normal';const plantAmount=options.plantAmount||'medium';
     session={version:VERSION,kind,label:meta.label,startMonth:meta.startMonth,base:meta.base,seed,day:0,running:false,speed:0,lockedPlants:true,activeTool:'none',difficulty,difficultyLabel:(DIFFICULTY[difficulty]||DIFFICULTY.normal).label,plantAmount,createdAt:new Date().toISOString(),lastSaved:null,plants:[],weeds:[],notes:[],_freshStart:true};
     const mainPlants=getSeasonPlants(kind,plantAmount);
-    session.plants=mainPlants.map((p,i)=>normalizePlant({...p,stage:'seedling',growth:6+((i*5)%10),waterPct:48+((i*7)%14),health:88,fertility:58+((i*9)%18)},i));
+    session.plants=mainPlants.map((p,i)=>normalizePlant({...p,stage:'seedling',growth:6+((i*5)%10),waterPct:28+((i*5)%10),health:88,fertility:58+((i*9)%18)},i));
     log(`${session.label}を開始。苗の状態から育成を始めます。季節に合った植物を練習画面へ配置し、固定しました。`);log('実行のメインは練習画面です。HUDは時間・天気・植物状態・ツール状態を表示します。');autoSave();
   }
   function load(){try{let raw=localStorage.getItem(SAVE_KEY);if(!raw){for(const k of OLD_KEYS){raw=localStorage.getItem(k);if(raw)break;}}const s=normalize(JSON.parse(raw||'null'));if(!s)return false;session=s;log('保存データを読み込みました。');return true;}catch(e){console.warn('growth load failed',e);return false;}}
@@ -222,11 +222,15 @@
   function updateCursorClass(){document.body.classList.remove('growth-tool-fertilizer','growth-tool-pesticide','growth-tool-weed');if(session?.activeTool&&session.activeTool!=='none')document.body.classList.add('growth-tool-'+session.activeTool);}
   function applyToMain(resetMain=false){try{window.FarmBotAppBridge?.applyGrowthSession?.(session,{reset:!!resetMain});window.FarmBotAppBridge?.setPlantLock?.(true);if(resetMain&&session)delete session._freshStart;}catch(e){console.warn('growth apply failed',e);}}
   function advanceDay(){
-    if(!session)return;syncMoistureFromMain();const d=Math.floor(session.day);const w=weatherAt(d);
+    if(!session)return;
+    // 1日進むたびに、練習画面側の水分と水跡を一緒に乾かしてからHUDへ同期する。
+    window.FarmBotAppBridge?.dryDownGrowthWater?.(1);
+    syncMoistureFromMain();
+    const d=Math.floor(session.day);const w=weatherAt(d);
     const diff=DIFFICULTY[session.difficulty||'normal']||DIFFICULTY.normal;if(rnd(d,30)<0.10*diff.eventMul&&session.plants.length){const p=session.plants[Math.floor(rnd(d,31)*session.plants.length)];if(p&&!p.bugs){p.bugs=true;log(`${p.name}に虫がつきました。殺虫剤で対処できます。`);}}
     if(rnd(d,40)<0.08*diff.eventMul&&session.weeds.length<6){session.weeds.push({id:'weed_'+d+'_'+Math.floor(rnd(d,42)*999),x:180+rnd(d,41)*1140,y:170+rnd(d,43)*420});log('畑に雑草が出ました。雑草駆除ツールで取り除けます。');}
     const weedPenalty=session.weeds.length*.045;
-    session.plants.forEach(p=>{if(!p.alive)return;const evap=session.base.evap*(w.temp/22)*(1-w.humidity/190);p.waterPct=clamp(p.waterPct+w.rain*.45-evap*4.1,0,100);p.fertility=clamp(p.fertility-.42,0,100);const[lo,hi]=moistureRange();let hd=.34;if(p.waterPct<lo)hd-=(lo-p.waterPct)*.052;if(p.waterPct>hi)hd-=(p.waterPct-hi)*.058;if(p.fertility<28)hd-=.22;if(p.fertility>92)hd-=.08;if(p.bugs)hd-=.72;hd-=weedPenalty;if(w.temp>33)hd-=.24;if(w.temp<3)hd-=.18;p.health=clamp(p.health+hd,0,100);const[st]=waterStatus(p);const waterMul=st==='適正'?1:st.includes('やや')?.58:.18;const fertMul=p.fertility>=35&&p.fertility<=90?1:p.fertility<20?.35:.65;p.growth=clamp(p.growth+waterMul*fertMul*(p.health/100)*1.15*diff.growthMul,0,100);const nextStage=stageFromGrowth(p.growth);if(nextStage!==p.stage){p.stage=nextStage;p.optimalUnit=unitRange(p.type,p.stage);p.optimalPct=pctRange(p.type,p.stage);log(`${p.name}が${p.stage==='seedling'?'苗':p.stage==='growing'?'成長期':'収穫期'}になりました。`);}p.yieldScore=Math.round(p.growth*.55+p.health*.30+p.fertility*.15);if(p.health<=0){p.alive=false;log(`${p.name}が枯れました。`);}});
+    session.plants.forEach(p=>{if(!p.alive)return;const evap=session.base.evap*(w.temp/22)*(1-w.humidity/190);/* 水分は練習画面の waterCells を正とし、ここでは独自加算しない */p.fertility=clamp(p.fertility-.42,0,100);const[lo,hi]=moistureRange();let hd=.34;if(p.waterPct<lo)hd-=(lo-p.waterPct)*.052;if(p.waterPct>hi)hd-=(p.waterPct-hi)*.058;if(p.fertility<28)hd-=.22;if(p.fertility>92)hd-=.08;if(p.bugs)hd-=.72;hd-=weedPenalty;if(w.temp>33)hd-=.24;if(w.temp<3)hd-=.18;p.health=clamp(p.health+hd,0,100);const[st]=waterStatus(p);const waterMul=st==='適正'?1:st.includes('やや')?.58:.18;const fertMul=p.fertility>=35&&p.fertility<=90?1:p.fertility<20?.35:.65;p.growth=clamp(p.growth+waterMul*fertMul*(p.health/100)*1.15*diff.growthMul,0,100);const nextStage=stageFromGrowth(p.growth);if(nextStage!==p.stage){p.stage=nextStage;p.optimalUnit=unitRange(p.type,p.stage);p.optimalPct=pctRange(p.type,p.stage);log(`${p.name}が${p.stage==='seedling'?'苗':p.stage==='growing'?'成長期':'収穫期'}になりました。`);}p.yieldScore=Math.round(p.growth*.55+p.health*.30+p.fertility*.15);if(p.health<=0){p.alive=false;log(`${p.name}が枯れました。`);}});
     applyToMain();autoSave();
   }
   function stepDay(){if(!session)return;session.day=clamp(Math.floor(session.day)+1,0,TOTAL_DAYS);advanceDay();render();}
@@ -261,7 +265,7 @@
     if(audio?.running)return;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;const ctx=new AC();const master=ctx.createGain();master.gain.value=.045;master.connect(ctx.destination);const chords=[[261.63,329.63,392.00],[196.00,246.94,329.63],[220.00,261.63,349.23],[174.61,220.00,261.63]];let step=0;function pluck(freq,t,dur=.42){const o=ctx.createOscillator(),g=ctx.createGain();o.type='triangle';o.frequency.value=freq;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.8,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+dur);o.connect(g);g.connect(master);o.start(t);o.stop(t+dur+.05);}function loop(){if(!audio?.running)return;const now=ctx.currentTime+.05;const chord=chords[step%chords.length];for(let i=0;i<8;i++){pluck(chord[i%3]*(i%2?2:1),now+i*.25,.32);}step++;audio.timeout=setTimeout(loop,1900);}audio={ctx,running:true,timeout:null};loop();$('#gMusic')?.classList.add('active');}
   function stopMusic(){if(!audio)return;audio.running=false;if(audio.timeout)clearTimeout(audio.timeout);try{audio.ctx.close();}catch{}audio=null;$('#gMusic')?.classList.remove('active');}
   function toggleMusic(){if(audio?.running)stopMusic();else startMusic();}
-  function open(kind, options={}){injectStyles();showClock=localStorage.getItem('farmbot_growth_clock_v1')==='1';if(kind==='load'){if(!load())makeSession('spring_growth',options);}else{try{localStorage.removeItem(SAVE_KEY);}catch{} makeSession(kind||'spring_growth',options);}const resetMain=!!session?._freshStart;applyToMain(resetMain);ensureHud();ensurePanel().classList.add('g-hidden');ensureAutoSave();render();}
+  function open(kind, options={}){injectStyles();showClock=localStorage.getItem('farmbot_growth_clock_v1')==='1';if(kind==='load'){if(!load())makeSession('spring_growth',options);}else{try{localStorage.removeItem(SAVE_KEY);}catch{} makeSession(kind||'spring_growth',options);}const resetMain=!!session?._freshStart;applyToMain(resetMain);if(resetMain)window.FarmBotAppBridge?.resetGrowthWaterSurface?.();syncMoistureFromMain();ensureHud();ensurePanel().classList.add('g-hidden');ensureAutoSave();render();}
   function close(){try{autoSave();}catch{} pause();stopMusic();document.body.classList.remove('growth-plant-locked','growth-tool-fertilizer','growth-tool-pesticide','growth-tool-weed');window.FarmBotAppBridge?.setPlantLock?.(false);$('#growthHudV2515')?.remove();$('#growthPanelV2515')?.remove();$('#growthClockV2517')?.remove();}
 
   window.addEventListener('farmbot:water-started',()=>{if(session)play(1);});

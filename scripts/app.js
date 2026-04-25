@@ -2117,19 +2117,12 @@
         return {id:p.id, type, x:p.x, y:p.y, stage, height:effectivePlantHeight(type, stage), health:p.health, waterPct:p.waterPct, water:p.waterPct};
       });
       if(shouldReset){
-        const pctToUnit=(gp)=> growthPercentToUnit(Number(gp.waterPct ?? 50), {type:gp.type||gp.species, stage:gp.stage||'seedling'});
-        for(const gp of growthSession.plants){
-          const unitVal=pctToUnit(gp);
-          const cx=gp.x/garden.w*garden.cols, cy=gp.y/garden.h*garden.rows;
-          const rad=Math.max(1.2, plantRootRadius({type:gp.type||gp.species,stage:gp.stage||'seedling'})/(garden.w/garden.cols));
-          for(let yy=Math.floor(cy-rad-1); yy<=Math.ceil(cy+rad+1); yy++){
-            for(let xx=Math.floor(cx-rad-1); xx<=Math.ceil(cx+rad+1); xx++){
-              if(xx<0||yy<0||xx>=garden.cols||yy>=garden.rows) continue;
-              if(Math.hypot(xx+0.5-cx, yy+0.5-cy)>rad) continue;
-              state.waterCells[`${xx},${yy}`]=Math.max(state.waterCells[`${xx},${yy}`]||0, unitVal);
-            }
-          }
-        }
+        // 育成Bの新規開始時は、土の見た目を必ず乾いた状態から始める。
+        // HUDの水分％は練習画面の waterCells を正として読むため、
+        // 初期 waterPct を水跡として描かない。
+        state.waterCells={};
+        state.waterHistory=[];
+        state.leafWater={};
       }
       state.mission={title:'練習モードB / 育成中', detail:'通常のMove・周辺機器・シークエンスを使いながら、育成時間と植物状態を管理します。植物配置は育成開始時に固定されています。', done:false};
       updateMission();
@@ -2138,6 +2131,34 @@
     },
     getPlantsSnapshot(){ return deepClone(state.plants || []); },
     getGrowthMoistureSnapshot(){ return deepClone(growthMoistureSnapshot()); },
+    resetGrowthWaterSurface(){
+      state.waterCells={}; state.waterHistory=[]; state.leafWater={};
+      renderAll(); saveState('自動保存');
+    },
+    dryDownGrowthWater(days=1){
+      // 育成B専用: シミュレーション日数に合わせ、水分数値と水跡を同時に乾かす。
+      // 1日で大半が乾き、2日以上でほぼ消える設定。
+      const d=Math.max(0, Number(days)||0);
+      if(d<=0) return;
+      const factor=Math.pow(0.18, d);
+      const next={};
+      for(const [key,val] of Object.entries(state.waterCells||{})){
+        const nv=Number(val||0)*factor;
+        if(nv>=0.025) next[key]=nv;
+      }
+      state.waterCells=next;
+      const now=Date.now();
+      state.waterHistory=(state.waterHistory||[]).filter(e=>{
+        const age=(now-(Number(e.ts)||now))/86400000;
+        return age+d<0.85;
+      });
+      for(const key of Object.keys(state.leafWater||{})){
+        const lw=(state.leafWater[key]||{});
+        lw.v=Number(lw.v||0)*factor;
+        if(lw.v<0.02) delete state.leafWater[key]; else state.leafWater[key]=lw;
+      }
+      renderAll(); saveState('自動保存');
+    },
     seedGrowthSeasonLayout,
     setPlantLock(locked){ state.growthModeActive = !!locked; state.growthPlantLocked = !!locked; updateGrowthPlantLockUI(); saveState('自動保存'); },
     getCurrentPosition(){ return deepClone(state.pos); },
