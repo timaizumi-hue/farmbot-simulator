@@ -213,7 +213,21 @@
   function play(speed=1){if(!session)return;session.running=true;session.speed=speed;if(timer)clearInterval(timer);lastTick=Date.now();timer=setInterval(()=>{if(!session?.running)return;const now=Date.now();const delta=now-lastTick;lastTick=now;const before=Math.floor(session.day);session.day=clamp(session.day+delta/DAY_MS*session.speed,0,TOTAL_DAYS);const after=Math.floor(session.day);if(after>before){for(let i=before;i<after;i++)advanceDay();}render();},1000);render();}
   function pause(){if(!session)return;session.running=false;session.speed=0;if(timer)clearInterval(timer);timer=null;render();autoSave();}
   function setTool(t){if(!session)return;session.activeTool=t||'none';log(`ツールを「${TOOL_LABEL[session.activeTool]||'なし'}」にしました。`);render();autoSave();}
-  function applyWaterFromMain(x,y,radius,amount){if(!session)return;const near=session.plants.filter(p=>Math.hypot(p.x-x,p.y-y)<=radius).sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];if(near){const addPct=clamp(amount/MAX_WATER_UNIT*100,6,28);near.waterPct=clamp(near.waterPct+addPct,0,100);log(`${near.name}へ練習画面のWaterを反映（+${Math.round(addPct)}%）。`);}else log('Waterを実行しましたが、育成植物の近くではありません。');applyToMain();render();autoSave();}
+  function applyWaterFromMain(x,y,radius,amount){
+    if(!session||!Array.isArray(session.plants)||!session.plants.length)return;
+    const px=Number(x||0), py=Number(y||0);
+    const effectiveRadius=Math.max(260, Number(radius||120)+140);
+    const ranked=session.plants.map(p=>({p,d:Math.hypot(Number(p.x||0)-px,Number(p.y||0)-py)})).sort((a,b)=>a.d-b.d);
+    const hit=ranked.find(r=>r.d<=effectiveRadius) || ranked[0];
+    if(hit&&hit.p){
+      const distanceMul=clamp(1-(hit.d/Math.max(effectiveRadius,1))*0.45,0.45,1);
+      const addPct=clamp((Number(amount||6)/MAX_WATER_UNIT*100)*distanceMul,5,32);
+      hit.p.waterPct=clamp(Number(hit.p.waterPct||0)+addPct,0,100);
+      hit.p.lastWateredAt=Date.now();
+      log(`${hit.p.name}へ練習画面のWaterを反映（+${Math.round(addPct)}%）。`);
+    }
+    applyToMain();render();autoSave();
+  }
   function handleMapClick(pt){
     if(!session||!session.activeTool||session.activeTool==='none')return false;
     if(session.activeTool==='fertilizer'){const p=session.plants.find(pl=>dist(pl,pt)<70);if(p){p.fertility=clamp(p.fertility+24,0,100);p.health=clamp(p.health+2,0,100);log(`${p.name}に肥料を追加しました。`);render();autoSave();return true;}log('肥料は植物をクリックしてください。');render();return true;}
@@ -237,6 +251,6 @@
 
   window.addEventListener('farmbot:water-started',()=>{if(session)play(1);});
   window.addEventListener('farmbot:move-started',()=>{if(session&&!session.running)play(1);});
-  window.addEventListener('farmbot:water-applied',ev=>{if(!session)return;const d=ev.detail||{};applyWaterFromMain(Number(d.x||0),Number(d.y||0),Math.max(160,Number(d.radius||120)+90),Math.max(2,Number(d.amount||8)));});
-  window.FarmBotGrowthMode={open,openLoad:()=>open('load'),render,save:autoSave,load,close,getSession:()=>session,hasSave:()=>!!localStorage.getItem(SAVE_KEY),handleMapClick,drawMapOverlay,setTool};
+  window.addEventListener('farmbot:water-applied',ev=>{if(!session)return;const d=ev.detail||{};if(d.skipGrowthEvent)return;applyWaterFromMain(Number(d.x||0),Number(d.y||0),Math.max(260,Number(d.radius||120)+140),Math.max(2,Number(d.amount||8)));});
+  window.FarmBotGrowthMode={open,openLoad:()=>open('load'),render,save:autoSave,load,close,getSession:()=>session,hasSave:()=>!!localStorage.getItem(SAVE_KEY),handleMapClick,drawMapOverlay,setTool,applyWaterFromMain};
 })();

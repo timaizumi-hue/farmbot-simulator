@@ -1238,7 +1238,7 @@
   function stopContinuousWater(){
     const waterEndTime = Date.now();
     const waterSeconds = state.waterStartTime ? Math.max(0, (waterEndTime - state.waterStartTime) / 1000) : 0;
-    const waterDetail = {x: state.pos.x, y: state.pos.y, z: state.pos.z, radius: state.waterRadius, rate: state.waterRate, seconds: waterSeconds, amount: Math.round(state.waterRate * Math.max(1, waterSeconds) * 10) / 10};
+    const waterDetail = {x: state.pos.x, y: state.pos.y, z: state.pos.z, radius: state.waterRadius, rate: state.waterRate, seconds: waterSeconds, amount: Math.round(state.waterRate * Math.max(1, waterSeconds) * 10) / 10, skipGrowthEvent: true};
     if(waterInterval){ clearInterval(waterInterval); waterInterval=null; }
     if(waterElapsedTimer){ clearInterval(waterElapsedTimer); waterElapsedTimer=null; }
     state.watering=false;
@@ -1247,6 +1247,7 @@
     if($('#waterPulseLabel')) $('#waterPulseLabel').textContent='散水開始から 0.0秒';
     if($('#waterSprayModeLabel')) $('#waterSprayModeLabel').textContent='WATER ONで現在位置から継続散水';
     window.dispatchEvent(new CustomEvent('farmbot:water-applied', {detail: waterDetail}));
+    try{ window.FarmBotGrowthMode?.applyWaterFromMain?.(waterDetail.x, waterDetail.y, Math.max(260, waterDetail.radius + 140), Math.max(2, waterDetail.amount)); }catch(e){ console.warn('growth water sync failed', e); }
     saveState('自動保存');
     renderAll();
   }
