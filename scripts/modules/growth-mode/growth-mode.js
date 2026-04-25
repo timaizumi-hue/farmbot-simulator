@@ -1,9 +1,9 @@
 (() => {
   'use strict';
 
-  const VERSION='25.22';
-  const SAVE_KEY='farmbot_growth_session_v25_22';
-  const OLD_KEYS=['farmbot_growth_session_v25_19','farmbot_growth_session_v25_18','farmbot_growth_session_v25_17','farmbot_growth_session_v25_16','farmbot_growth_session_v25_15','farmbot_growth_session_v25_14','farmbot_growth_session_v25_13','farmbot_growth_session_v25_12'];
+  const VERSION='25.23';
+  const SAVE_KEY='farmbot_growth_session_v25_23';
+  const OLD_KEYS=['farmbot_growth_session_v25_22','farmbot_growth_session_v25_21','farmbot_growth_session_v25_20','farmbot_growth_session_v25_19','farmbot_growth_session_v25_18','farmbot_growth_session_v25_17','farmbot_growth_session_v25_16','farmbot_growth_session_v25_15','farmbot_growth_session_v25_14','farmbot_growth_session_v25_13','farmbot_growth_session_v25_12'];
   const TOTAL_DAYS=90;
   const SEASON_REAL_MS=60*60*1000;
   const DAY_MS=SEASON_REAL_MS/TOTAL_DAYS;
@@ -69,6 +69,26 @@
   function log(t){if(!session)return;session.notes.unshift(`${dateText(session.day)} ${t}`);session.notes=session.notes.slice(0,80);}
   function autoSave(){if(!session)return;session.lastSaved=new Date().toISOString();localStorage.setItem(SAVE_KEY,JSON.stringify(session));}
   function ensureAutoSave(){if(autosaveTimer)return;autosaveTimer=setInterval(autoSave,AUTO_SAVE_MS);}
+
+  function syncMoistureFromMain(){
+    if(!session || !Array.isArray(session.plants)) return;
+    const snap = window.FarmBotAppBridge?.getGrowthMoistureSnapshot?.();
+    if(!Array.isArray(snap) || !snap.length) return;
+    session.plants.forEach((p)=>{
+      let m = snap.find(x=>x.id && p.id && x.id===p.id);
+      if(!m){
+        m = snap.slice().sort((a,b)=>Math.hypot((a.x||0)-p.x,(a.y||0)-p.y)-Math.hypot((b.x||0)-p.x,(b.y||0)-p.y))[0];
+        if(m && Math.hypot((m.x||0)-p.x,(m.y||0)-p.y)>95) m = null;
+      }
+      if(m){
+        p.waterPct = clamp(Number(m.waterPct||0),0,100);
+        p.waterUnit = Number(m.waterUnit||0);
+        p.targetUnit = Array.isArray(m.targetUnit) ? m.targetUnit : p.targetUnit;
+        p.targetPct = Array.isArray(m.targetPct) ? m.targetPct : moistureRange();
+      }
+    });
+  }
+
 
   function injectStyles(){
     if($('#growthModeV2516Style'))return;
@@ -146,7 +166,7 @@
   }
   function plantMiniHtml(){return session.plants.slice(0,10).map(p=>{const[st,cls]=waterStatus(p);return`<div class="g-mini-plant ${cls}"><b>${p.name}${p.bugs?' 🐛':''}</b><div class="minirow"><span>水${Math.round(p.waterPct)}%</span><span>肥${Math.round(p.fertility)}%</span></div><div class="bar"><i style="width:${p.health}%"></i></div></div>`;}).join('');}
   function render(){
-    if(!session)return;const h=ensureHud(),p=ensurePanel();const w=weatherAt(Math.floor(session.day));
+    if(!session)return;syncMoistureFromMain();const h=ensureHud(),p=ensurePanel();const w=weatherAt(Math.floor(session.day));
     $('#gSeason',h).textContent=session.label;$('#gDate',h).textContent=dateText(session.day);$('#gDay',h).textContent=`${Math.floor(session.day)+1}/${TOTAL_DAYS}日`;$('#gStage',h).textContent=stageText();$('#gSpeed',h).textContent=session.running?`速度 x${session.speed}`:'停止中';$('#gWeather',h).textContent=`${w.label} ${w.temp}℃ 湿度${w.humidity}%`;$('#gDiff',h).textContent=`${session.difficultyLabel||'中級'}・${AMOUNT_LABEL[session.plantAmount]||'中程度'}`;$('#gTool',h).textContent=`ツール: ${TOOL_LABEL[session.activeTool]||'なし'}`;$('#gSaveState',h).textContent=`自動保存 ${session.lastSaved?new Date(session.lastSaved).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}):'待機'}`;
     $('#gpStats',p).innerHTML=`<div class="gp-stat"><span>季節</span><strong>${session.label}</strong></div><div class="gp-stat"><span>日付</span><strong>${dateText(session.day)}</strong></div><div class="gp-stat"><span>経過</span><strong>${Math.floor(session.day)+1}/${TOTAL_DAYS}日</strong></div><div class="gp-stat"><span>段階</span><strong>${stageText()}</strong></div><div class="gp-stat"><span>難易度</span><strong>${session.difficultyLabel||'中級'}</strong></div><div class="gp-stat"><span>株数</span><strong>${AMOUNT_LABEL[session.plantAmount]||'中程度'} / ${session.plants.length}株</strong></div><div class="gp-stat"><span>速度</span><strong>${session.running?'x'+session.speed:'停止'}</strong></div><div class="gp-stat"><span>天気</span><strong>${w.label} / ${w.temp}℃ / 湿度${w.humidity}%</strong></div><div class="gp-stat"><span>虫</span><strong>${session.plants.filter(x=>x.bugs).length}株</strong></div><div class="gp-stat"><span>雑草</span><strong>${session.weeds.length}本</strong></div>`;
     $('#gpForecast',p).innerHTML=forecastHtml();$('#gpMini',p).innerHTML=miniMapHtml();$('#gpToolName',p).textContent=TOOL_LABEL[session.activeTool]||'なし';
@@ -202,7 +222,7 @@
   function updateCursorClass(){document.body.classList.remove('growth-tool-fertilizer','growth-tool-pesticide','growth-tool-weed');if(session?.activeTool&&session.activeTool!=='none')document.body.classList.add('growth-tool-'+session.activeTool);}
   function applyToMain(resetMain=false){try{window.FarmBotAppBridge?.applyGrowthSession?.(session,{reset:!!resetMain});window.FarmBotAppBridge?.setPlantLock?.(true);if(resetMain&&session)delete session._freshStart;}catch(e){console.warn('growth apply failed',e);}}
   function advanceDay(){
-    if(!session)return;const d=Math.floor(session.day);const w=weatherAt(d);
+    if(!session)return;syncMoistureFromMain();const d=Math.floor(session.day);const w=weatherAt(d);
     const diff=DIFFICULTY[session.difficulty||'normal']||DIFFICULTY.normal;if(rnd(d,30)<0.10*diff.eventMul&&session.plants.length){const p=session.plants[Math.floor(rnd(d,31)*session.plants.length)];if(p&&!p.bugs){p.bugs=true;log(`${p.name}に虫がつきました。殺虫剤で対処できます。`);}}
     if(rnd(d,40)<0.08*diff.eventMul&&session.weeds.length<6){session.weeds.push({id:'weed_'+d+'_'+Math.floor(rnd(d,42)*999),x:180+rnd(d,41)*1140,y:170+rnd(d,43)*420});log('畑に雑草が出ました。雑草駆除ツールで取り除けます。');}
     const weedPenalty=session.weeds.length*.045;
@@ -213,7 +233,16 @@
   function play(speed=1){if(!session)return;session.running=true;session.speed=speed;if(timer)clearInterval(timer);lastTick=Date.now();timer=setInterval(()=>{if(!session?.running)return;const now=Date.now();const delta=now-lastTick;lastTick=now;const before=Math.floor(session.day);session.day=clamp(session.day+delta/DAY_MS*session.speed,0,TOTAL_DAYS);const after=Math.floor(session.day);if(after>before){for(let i=before;i<after;i++)advanceDay();}render();},1000);render();}
   function pause(){if(!session)return;session.running=false;session.speed=0;if(timer)clearInterval(timer);timer=null;render();autoSave();}
   function setTool(t){if(!session)return;session.activeTool=t||'none';log(`ツールを「${TOOL_LABEL[session.activeTool]||'なし'}」にしました。`);render();autoSave();}
-  function applyWaterFromMain(x,y,radius,amount){if(!session)return;const near=session.plants.filter(p=>Math.hypot(p.x-x,p.y-y)<=radius).sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];if(near){const addPct=amount/MAX_WATER_UNIT*100;near.waterPct=clamp(near.waterPct+addPct,0,100);log(`${near.name}へ練習画面のWaterを反映（+${Math.round(addPct)}%）。`);}else log('Waterを実行しましたが、育成植物の近くではありません。');applyToMain();render();autoSave();}
+  function applyWaterFromMain(x,y,radius,amount){
+    if(!session)return;
+    syncMoistureFromMain();
+    const near=session.plants.filter(p=>Math.hypot(p.x-x,p.y-y)<=radius).sort((a,b)=>Math.hypot(a.x-x,a.y-y)-Math.hypot(b.x-x,b.y-y))[0];
+    if(near) log(`${near.name}の水分を練習画面から同期しました（${Math.round(near.waterPct)}%）。`);
+    else log('Waterを実行しましたが、育成植物の近くではありません。');
+    applyToMain(false);
+    render();
+    autoSave();
+  }
   function handleMapClick(pt){
     if(!session||!session.activeTool||session.activeTool==='none')return false;
     if(session.activeTool==='fertilizer'){const p=session.plants.find(pl=>dist(pl,pt)<70);if(p){p.fertility=clamp(p.fertility+24,0,100);p.health=clamp(p.health+2,0,100);log(`${p.name}に肥料を追加しました。`);render();autoSave();return true;}log('肥料は植物をクリックしてください。');render();return true;}

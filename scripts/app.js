@@ -2070,6 +2070,30 @@
     return deepClone(state.plants || []);
   }
 
+
+  function growthUnitToPercent(unit, plant){
+    const range = getPlantTargetRange(plant || {});
+    const mi = Number(range[0] || 0), ma = Number(range[1] || mi + 1);
+    const mid = (mi + ma) / 2;
+    const span = Math.max(0.5, ma - mi);
+    return clamp(50 + (Number(unit || 0) - mid) * (20 / span), 0, 100);
+  }
+  function growthPercentToUnit(pct, plant){
+    const range = getPlantTargetRange(plant || {});
+    const mi = Number(range[0] || 0), ma = Number(range[1] || mi + 1);
+    const mid = (mi + ma) / 2;
+    const span = Math.max(0.5, ma - mi);
+    return clamp(mid + (Number(pct || 50) - 50) * (span / 20), 0, 16);
+  }
+  function growthMoistureSnapshot(){
+    return (state.plants || []).map((p, idx)=>{
+      const unit = waterAtPlant(p);
+      const pct = growthUnitToPercent(unit, p);
+      const range = getPlantTargetRange(p);
+      return {id:p.id || ('plant_'+idx), x:p.x, y:p.y, type:p.type, species:p.type, stage:p.stage || 'seedling', waterUnit:unit, waterPct:pct, targetUnit:range, targetPct:[40,60]};
+    });
+  }
+
   window.FarmBotAppBridge = {
     ensureFreeMode(){
       if($('#appRoot')?.classList.contains('hidden')) initMode('free');
@@ -2093,13 +2117,7 @@
         return {id:p.id, type, x:p.x, y:p.y, stage, height:effectivePlantHeight(type, stage), health:p.health, waterPct:p.waterPct, water:p.waterPct};
       });
       if(shouldReset){
-        const pctToUnit=(gp)=>{
-          const pct=Number(gp.waterPct ?? 50);
-          const unit=Array.isArray(gp.optimalUnit)?gp.optimalUnit:getPlantTargetRange({type:gp.type||gp.species,stage:gp.stage||'seedling'});
-          const mid=(unit[0]+unit[1])/2;
-          const slope=(unit[1]-unit[0])/20;
-          return clamp(mid+(pct-50)*slope,0,16);
-        };
+        const pctToUnit=(gp)=> growthPercentToUnit(Number(gp.waterPct ?? 50), {type:gp.type||gp.species, stage:gp.stage||'seedling'});
         for(const gp of growthSession.plants){
           const unitVal=pctToUnit(gp);
           const cx=gp.x/garden.w*garden.cols, cy=gp.y/garden.h*garden.rows;
@@ -2119,6 +2137,7 @@
       renderPlants(); renderAll(); saveState('自動保存');
     },
     getPlantsSnapshot(){ return deepClone(state.plants || []); },
+    getGrowthMoistureSnapshot(){ return deepClone(growthMoistureSnapshot()); },
     seedGrowthSeasonLayout,
     setPlantLock(locked){ state.growthModeActive = !!locked; state.growthPlantLocked = !!locked; updateGrowthPlantLockUI(); saveState('自動保存'); },
     getCurrentPosition(){ return deepClone(state.pos); },
