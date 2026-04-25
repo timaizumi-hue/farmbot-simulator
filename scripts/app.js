@@ -2081,14 +2081,27 @@
       state.growthModeActive = true;
       state.growthPlantLocked = true;
       state.growthSeasonLabel = growthSession.label || '育成';
+      if(growthSession.resetMainStateOnce){
+        state.pos = {x:0,y:0,z:0};
+        state.selected = {x:0,y:0,z:0};
+        state.watering = false;
+        state.waterStartTime = null;
+        state.waterCells = {};
+        state.waterHistory = [];
+        state.leafWater = {};
+        state.pathHistory = [];
+        state.recentPath = null;
+        state.sequence = Array.isArray(state.sequence) ? state.sequence : [];
+      }
       state.plants = growthSession.plants.map((p)=>{
         const type = p.species || p.type || 'lettuce';
-        const stage = p.growth>=75 ? 'fruiting' : p.growth>=28 ? 'growing' : 'seedling';
-        return {id:p.id, type, x:p.x, y:p.y, stage, height:effectivePlantHeight(type, stage), health:p.health, water:p.water};
+        const stage = p.stage || (p.growth>=75 ? 'fruiting' : p.growth>=28 ? 'growing' : 'seedling');
+        return {id:p.id, type, x:p.x, y:p.y, stage, height:effectivePlantHeight(type, stage), health:p.health, water:p.waterPct, waterPct:p.waterPct, fertility:p.fertility, growth:p.growth};
       });
       state.mission={title:'練習モードB / 育成中', detail:'通常のMove・周辺機器・シークエンスを使いながら、育成時間と植物状態を管理します。植物配置は育成開始時に固定されています。', done:false};
       updateMission();
       updateGrowthPlantLockUI();
+      applyStateToControls();
       renderPlants(); renderAll(); saveState('自動保存');
     },
     getPlantsSnapshot(){ return deepClone(state.plants || []); },
