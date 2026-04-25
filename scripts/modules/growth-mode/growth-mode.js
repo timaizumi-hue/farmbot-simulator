@@ -1,9 +1,9 @@
 (() => {
   'use strict';
 
-  const VERSION='25.20';
-  const SAVE_KEY='farmbot_growth_session_v25_20';
-  const OLD_KEYS=['farmbot_growth_session_v25_19','farmbot_growth_session_v25_18','farmbot_growth_session_v25_17','farmbot_growth_session_v25_16','farmbot_growth_session_v25_15','farmbot_growth_session_v25_14','farmbot_growth_session_v25_13','farmbot_growth_session_v25_12'];
+  const VERSION='25.21';
+  const SAVE_KEY='farmbot_growth_session_v25_21';
+  const OLD_KEYS=['farmbot_growth_session_v25_20','farmbot_growth_session_v25_19','farmbot_growth_session_v25_18','farmbot_growth_session_v25_17','farmbot_growth_session_v25_16','farmbot_growth_session_v25_15','farmbot_growth_session_v25_14','farmbot_growth_session_v25_13','farmbot_growth_session_v25_12'];
   const TOTAL_DAYS=90;
   const SEASON_REAL_MS=60*60*1000;
   const DAY_MS=SEASON_REAL_MS/TOTAL_DAYS;
@@ -238,5 +238,5 @@
   window.addEventListener('farmbot:water-started',()=>{if(session)play(1);});
   window.addEventListener('farmbot:move-started',()=>{if(session&&!session.running)play(1);});
   window.addEventListener('farmbot:water-applied',ev=>{if(!session)return;const d=ev.detail||{};applyWaterFromMain(Number(d.x||0),Number(d.y||0),Math.max(120,Number(d.radius||120)),Math.max(2,Math.round(Number(d.amount||8)/2)));});
-  window.FarmBotGrowthMode={open,openLoad:()=>open('load'),render,save:autoSave,load,close,getSession:()=>session,hasSave:()=>!!localStorage.getItem(SAVE_KEY),handleMapClick,drawMapOverlay,setTool};
+  window.FarmBotGrowthMode={open,openLoad:()=>open('load'),render,save:autoSave,load,close,getSession:()=>session,hasSave:()=>!!localStorage.getItem(SAVE_KEY)||OLD_KEYS.some(k=>!!localStorage.getItem(k)),handleMapClick,drawMapOverlay,setTool};
 })();
